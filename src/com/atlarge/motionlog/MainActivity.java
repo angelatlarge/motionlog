@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.view.Menu;
 import android.view.View;
+import android.widget.Button;
 
 public class MainActivity extends Activity {
 	private boolean flagStarted = false;
@@ -22,13 +23,14 @@ public class MainActivity extends Activity {
 		return true;
 	}
 	
-	@SuppressWarnings("unused")
-	private void startStopButtonClick(View view) {
+	public void startStopButtonClick(View view) {
+		Button btn = (Button)findViewById(R.id.button_startstop);
 		if (flagStarted) {
 			startLogging();
+			btn.setText("Stop");			
 		} else {
-			// TODO: Write this
 			stopLogging();
+			btn.setText("Start");			
 		}
 		flagStarted = !flagStarted;
 	}
