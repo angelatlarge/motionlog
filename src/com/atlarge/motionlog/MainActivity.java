@@ -36,11 +36,11 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 	  	public void onReceive(Context context, Intent intent) {
 	  		// Get extra data included in the Intent
 	  		if (intent.getAction().equals(AccelerometerLoggerService.ACTION_LOGSTARTED)) {
-		  		updateUI(true);
+	  			updateButtonUI(true);
 		  		mIsLogging = true;
 		  		Toast.makeText(MainActivity.this, "log stated", Toast.LENGTH_SHORT).show();	 	    	
 	  		} else if (intent.getAction().equals(AccelerometerLoggerService.ACTION_LOGSTOPPED)) {
-		  		updateUI(false);
+	  			updateButtonUI(false);
 		  		mIsLogging = false;
 		  		Toast.makeText(MainActivity.this, "log stopped", Toast.LENGTH_SHORT).show();	 	    	
 	  		} else {
@@ -96,6 +96,9 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 		// Apply the adapter to the spinner
 		spinner.setAdapter(adapter);
+		
+		Log.d("MainActivity", "onCreate");
+		updateUIFromIntent(getIntent());
 	}
 
 	@Override
@@ -105,7 +108,32 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		return true;
 	}
 		
+	@Override
+	public void onResume() {
+		super.onResume();  // Always call the superclass method first
+		Log.d("MainActivity", "onResume");
+		
+		// TODO: Reconnect to the service
+	}
+	
+	@Override
+	public void onRestart() {
+		super.onRestart();  // Always call the superclass method first
+		Log.d("MainActivity", "onRestart");
+		
+		// TODO: Reconnect to the service
+	}
+	
+	@Override
+	public void onStop() {
+	    super.onStop();  // Always call the superclass method first
+		Log.d("MainActivity", "onStop");
+
+	    // TODO: Reconnect to the service
+	}
+	
 	public void startStopButtonClick(View view) {
+		Log.d("MainActivity", "startStopButton clicked");
 		if (!mIsLogging) {
 			startLogging();
 		} else {
@@ -119,15 +147,17 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		
 		int sensorRate;
 		if (mSensorUpdateSpeed == SENSORUPDATESPEED_NOSELECTION) {
+			sensorRate = AccelerometerLoggerService.DEFAULT_SENSOR_RATE;
+		} else if (mSensorUpdateSpeed == 0) {
 			sensorRate = SensorManager.SENSOR_DELAY_NORMAL;
-		} else if (mSensorUpdateSpeed == 0) {
-			sensorRate = SensorManager.SENSOR_DELAY_UI;
 		} else if (mSensorUpdateSpeed == 1) {
+			sensorRate = SensorManager.SENSOR_DELAY_UI;
+		} else if (mSensorUpdateSpeed == 2) {
 			sensorRate = SensorManager.SENSOR_DELAY_GAME;
-		} else if (mSensorUpdateSpeed == 0) {
+		} else if (mSensorUpdateSpeed == 2) {
 			sensorRate = SensorManager.SENSOR_DELAY_FASTEST;
 		} else {
-			sensorRate = SensorManager.SENSOR_DELAY_NORMAL;
+			sensorRate = AccelerometerLoggerService.DEFAULT_SENSOR_RATE;
 		}
 					
 		Intent intent = new Intent(this, AccelerometerLoggerService.class);
@@ -147,7 +177,7 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		stopService(intent);		
 	}
 	
-	private void updateUI(boolean isLogging) {
+	private void updateButtonUI(boolean isLogging) {
 		Button btn = (Button)findViewById(R.id.button_startstop);
 		if (isLogging) {
 			btn.setText("Stop");			
@@ -169,6 +199,35 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		mSensorUpdateSpeed = SENSORUPDATESPEED_NOSELECTION;
 	}
     
+	private void updateUIFromIntent(Intent intent) {
+		Log.d("MainActivity", "updateUIFromIntent");		
+		int SensorRate = AccelerometerLoggerService.DEFAULT_SENSOR_RATE;
+		boolean LoggerStarted = false; 
+	    Bundle extras = intent.getExtras();
+	    if(extras != null) {
+	    	SensorRate = extras.getInt(AccelerometerLoggerService.INTENTEXTRA_UPDATERATE, AccelerometerLoggerService.DEFAULT_SENSOR_RATE);
+	    	LoggerStarted =  extras.getBoolean(AccelerometerLoggerService.INTENTEXTRA_SERVICERUNNING, true);
+			Log.d("MainActivity", "updateUIFromIntent: found extras");		
+	    }
+	    updateButtonUI(LoggerStarted);
+	    mIsLogging = LoggerStarted;
+		Spinner spinner = (Spinner) findViewById(R.id.spinner_updatefrequency);
+	    switch (SensorRate) {
+	    case SensorManager.SENSOR_DELAY_NORMAL : spinner.setSelection(0); break;
+	    case SensorManager.SENSOR_DELAY_UI : spinner.setSelection(1); break;
+	    case SensorManager.SENSOR_DELAY_GAME : spinner.setSelection(2); break;
+	    case SensorManager.SENSOR_DELAY_FASTEST : spinner.setSelection(3); break;
+	    default: spinner.setSelection(0); break;
+	    }
+	}
+	
+	@Override
+	protected void onNewIntent (Intent intent) {
+		super.onNewIntent(intent);
+		updateUIFromIntent(intent);
+	    
+	}
+	
 
 
 }

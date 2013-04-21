@@ -37,7 +37,9 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	public static final String ACTION_LOGSTOPPED = "com.atlarge.motionlog.logstopped";
 	public static final String APPLICATION_DIR = "com.atlarge.motionlog";
 	public static final String INTENTEXTRA_UPDATERATE = "com.atlarge.updaterate";
-	private final int DEFAULT_SENSOR_RATE = SensorManager.SENSOR_DELAY_NORMAL;
+	public static final String INTENTEXTRA_SERVICERUNNING = "com.atlarge.servicerunning";
+	private static final int NOTIFICATIONID_INPROGRESS = 001;
+	public static final int DEFAULT_SENSOR_RATE = SensorManager.SENSOR_DELAY_NORMAL;
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
     private File logFile;
@@ -180,7 +182,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
         }    
         
         // Create a notification
-        createNotification();
+        startNotification();
         
 		// Register for sensor events
         mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
@@ -219,6 +221,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 		Intent i = new Intent();
         i.setAction(ACTION_LOGSTOPPED);
 		LocalBroadcastManager.getInstance(this).sendBroadcast(i);
+		stopNotification();
     }
     
 	@Override
@@ -244,7 +247,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
         }    
 	}
 	
-	private void createNotification() {
+	private void startNotification() {
 		NotificationCompat.Builder mBuilder =
 			    new NotificationCompat.Builder(this)
 			    .setSmallIcon(R.drawable.ic_launcher)
@@ -252,6 +255,9 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 			    .setContentText("Hello World!");
 		
 		Intent resultIntent = new Intent(this, MainActivity.class);
+		resultIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+		resultIntent.putExtra(INTENTEXTRA_UPDATERATE, mSensorRate);
+		resultIntent.putExtra(INTENTEXTRA_SERVICERUNNING, true);
 		// Because clicking the notification opens a new ("special") activity, there's
 		// no need to create an artificial back stack.
 		PendingIntent returnPendingIntent =
@@ -265,13 +271,19 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 		mBuilder.setContentIntent(returnPendingIntent);
 		
 		// Sets an ID for the notification
-		int mNotificationId = 001;
+		int mNotificationId = NOTIFICATIONID_INPROGRESS;
 		// Gets an instance of the NotificationManager service
 		NotificationManager mNotifyMgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 		// Builds the notification and issues it.
 		mNotifyMgr.notify(mNotificationId, mBuilder.build());
 		
 	}
+	
+	private void stopNotification() {
+		NotificationManager mNotifyMgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+		mNotifyMgr.cancel(NOTIFICATIONID_INPROGRESS);
+	}
+
 }
 
 /*
