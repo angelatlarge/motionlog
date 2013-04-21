@@ -11,6 +11,7 @@ import java.util.Locale;
 import android.annotation.SuppressLint;
 import android.app.IntentService;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -19,12 +20,14 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Binder;
+import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.widget.Toast;
 
@@ -33,11 +36,14 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	public static final String ACTION_LOGSTARTED = "com.atlarge.motionlog.logstarted";
 	public static final String ACTION_LOGSTOPPED = "com.atlarge.motionlog.logstopped";
 	public static final String APPLICATION_DIR = "com.atlarge.motionlog";
+	public static final String INTENTEXTRA_UPDATERATE = "com.atlarge.updaterate";
+	private final int DEFAULT_SENSOR_RATE = SensorManager.SENSOR_DELAY_NORMAL;
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
     private File logFile;
 	private FileOutputStream logOutputStream;
 	private PrintWriter logWriter;
+	private int mSensorRate = DEFAULT_SENSOR_RATE;
 
 /*	
     // Unique Identification Number for the Notification.
@@ -112,6 +118,11 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
+	    Bundle extras = intent.getExtras();
+	    if(extras != null) {
+	    	mSensorRate = extras.getInt(INTENTEXTRA_UPDATERATE, DEFAULT_SENSOR_RATE);
+	    }
+				
 		if (startLogging()) {
 			return START_STICKY;
 		} else {
@@ -144,7 +155,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	        return false;
 	    } // else: we know the external storage is available
 	    
-        // Create a file
+        // Create a directory
 	    File logDir = new File(Environment.getExternalStorageDirectory(), APPLICATION_DIR);
 	    if (!logDir.exists()) {
 	        if (!logDir.mkdirs()) {
@@ -155,7 +166,8 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	        }
 	    }
 
-	    SimpleDateFormat formatter = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss", Locale.US);
+	    // Create a file
+	    SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd_HH-mm-ss", Locale.US);
 	    Date now = new Date();
 	    String logFN = formatter.format(now) + ".txt";
         logFile = new File(logDir.getAbsolutePath(), logFN);
@@ -167,13 +179,16 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
             e.printStackTrace();
         }    
         
+        // Create a notification
+        createNotification();
+        
 		// Register for sensor events
         mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
+        mSensorManager.registerListener(this, mAccelerometer, mSensorRate);
 
         // Toast notification
-		Toast.makeText(this, "Starting logging", Toast.LENGTH_SHORT).show();
+		Toast.makeText(this, String.format("Starting logging at rate %d", mSensorRate), Toast.LENGTH_SHORT).show();
 		
 		// Broadcast notification
 		Intent i = new Intent();
@@ -227,6 +242,35 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
         } catch (Exception e) {
             e.printStackTrace();
         }    
+	}
+	
+	private void createNotification() {
+		NotificationCompat.Builder mBuilder =
+			    new NotificationCompat.Builder(this)
+			    .setSmallIcon(R.drawable.ic_launcher)
+			    .setContentTitle("My notification")
+			    .setContentText("Hello World!");
+		
+		Intent resultIntent = new Intent(this, MainActivity.class);
+		// Because clicking the notification opens a new ("special") activity, there's
+		// no need to create an artificial back stack.
+		PendingIntent returnPendingIntent =
+		    PendingIntent.getActivity(
+		    this,
+		    0,
+		    resultIntent,
+		    PendingIntent.FLAG_UPDATE_CURRENT
+		);		
+		
+		mBuilder.setContentIntent(returnPendingIntent);
+		
+		// Sets an ID for the notification
+		int mNotificationId = 001;
+		// Gets an instance of the NotificationManager service
+		NotificationManager mNotifyMgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+		// Builds the notification and issues it.
+		mNotifyMgr.notify(mNotificationId, mBuilder.build());
+		
 	}
 }
 

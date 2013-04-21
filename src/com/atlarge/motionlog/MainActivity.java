@@ -13,11 +13,20 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.Spinner;
 import android.widget.Toast;
+import android.hardware.SensorManager;
 
-public class MainActivity extends Activity {
+
+@SuppressWarnings("unused")
+public class MainActivity extends Activity  implements OnItemSelectedListener {
+	private static final int SENSORUPDATESPEED_NOSELECTION = -1;
 	private boolean mIsLogging = false;
+	private int mSensorUpdateSpeed = SENSORUPDATESPEED_NOSELECTION;
 //	private boolean mIsBound = false;
 //	private AccelerometerLoggerService mBoundService;
 	
@@ -77,6 +86,16 @@ public class MainActivity extends Activity {
 		filter.addAction(AccelerometerLoggerService.ACTION_LOGSTARTED);
 		filter.addAction(AccelerometerLoggerService.ACTION_LOGSTOPPED);
 		LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver, filter);
+		
+		// Populate the spinner
+		Spinner spinner = (Spinner) findViewById(R.id.spinner_updatefrequency);
+		// Create an ArrayAdapter using the string array and a default spinner layout
+		ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
+		        R.array.sensor_update_speeds, android.R.layout.simple_spinner_item);
+		// Specify the layout to use when the list of choices appears
+		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		// Apply the adapter to the spinner
+		spinner.setAdapter(adapter);
 	}
 
 	@Override
@@ -98,12 +117,21 @@ public class MainActivity extends Activity {
 //		bindService(new Intent(this, AccelerometerLoggerService.class), mConnection, Context.BIND_AUTO_CREATE);
 //		mIsBound = true;
 		
+		int sensorRate;
+		if (mSensorUpdateSpeed == SENSORUPDATESPEED_NOSELECTION) {
+			sensorRate = SensorManager.SENSOR_DELAY_NORMAL;
+		} else if (mSensorUpdateSpeed == 0) {
+			sensorRate = SensorManager.SENSOR_DELAY_UI;
+		} else if (mSensorUpdateSpeed == 1) {
+			sensorRate = SensorManager.SENSOR_DELAY_GAME;
+		} else if (mSensorUpdateSpeed == 0) {
+			sensorRate = SensorManager.SENSOR_DELAY_FASTEST;
+		} else {
+			sensorRate = SensorManager.SENSOR_DELAY_NORMAL;
+		}
+					
 		Intent intent = new Intent(this, AccelerometerLoggerService.class);
-		/*
-		EditText editText = (EditText) findViewById(R.id.edit_message);
-		String message = editText.getText().toString();
-		intent.putExtra(EXTRA_MESSAGE, message);
-		*/
+		intent.putExtra(AccelerometerLoggerService.INTENTEXTRA_UPDATERATE, sensorRate);
 		startService(intent);
 		
 	}
@@ -126,6 +154,19 @@ public class MainActivity extends Activity {
 		} else {
 			btn.setText("Start");			
 		}
+	}
+
+	@Override
+	public void onItemSelected(AdapterView<?> parent, View view,  int pos, long id) {
+		// An item was selected. You can retrieve the selected item using
+        // parent.getItemAtPosition(pos)
+		mSensorUpdateSpeed = pos;
+	}
+
+	@Override
+	public void onNothingSelected(AdapterView<?> arg0) {
+		// TODO Auto-generated method stub
+		mSensorUpdateSpeed = SENSORUPDATESPEED_NOSELECTION;
 	}
     
 
