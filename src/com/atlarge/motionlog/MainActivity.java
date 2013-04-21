@@ -3,10 +3,14 @@ package com.atlarge.motionlog;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
@@ -14,9 +18,31 @@ import android.widget.Toast;
 
 public class MainActivity extends Activity {
 	private boolean mIsLogging = false;
-	private boolean mIsBound = false;
-	private AccelerometerLoggerService mBoundService;
+//	private boolean mIsBound = false;
+//	private AccelerometerLoggerService mBoundService;
 	
+	
+	private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
+	  	@Override
+	  	public void onReceive(Context context, Intent intent) {
+	  		// Get extra data included in the Intent
+	  		if (intent.getAction().equals(AccelerometerLoggerService.ACTION_LOGSTARTED)) {
+		  		updateUI(true);
+		  		mIsLogging = true;
+		  		Toast.makeText(MainActivity.this, "log stated", Toast.LENGTH_SHORT).show();	 	    	
+	  		} else if (intent.getAction().equals(AccelerometerLoggerService.ACTION_LOGSTOPPED)) {
+		  		updateUI(false);
+		  		mIsLogging = false;
+		  		Toast.makeText(MainActivity.this, "log stopped", Toast.LENGTH_SHORT).show();	 	    	
+	  		} else {
+	  			// Captured unknown intent
+	  		}
+//	  		String message = intent.getStringExtra("message");
+//	  		Log.d("receiver", "Got message: " + message);
+	  	}
+	};
+
+/*		
 	private ServiceConnection mConnection = new ServiceConnection() {
 	    public void onServiceConnected(ComponentName className, IBinder service) {
 	        // This is called when the connection with the service has been
@@ -42,11 +68,15 @@ public class MainActivity extends Activity {
 	        updateUI(mIsLogging);
 	    }
 	};	
-
+*/
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		IntentFilter filter = new IntentFilter();
+		filter.addAction(AccelerometerLoggerService.ACTION_LOGSTARTED);
+		filter.addAction(AccelerometerLoggerService.ACTION_LOGSTOPPED);
+		LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver, filter);
 	}
 
 	@Override
@@ -65,17 +95,28 @@ public class MainActivity extends Activity {
 	}
 	
 	private void startLogging() {
-		bindService(new Intent(this, AccelerometerLoggerService.class), mConnection, Context.BIND_AUTO_CREATE);
-		mIsBound = true;
+//		bindService(new Intent(this, AccelerometerLoggerService.class), mConnection, Context.BIND_AUTO_CREATE);
+//		mIsBound = true;
+		
+		Intent intent = new Intent(this, AccelerometerLoggerService.class);
+		/*
+		EditText editText = (EditText) findViewById(R.id.edit_message);
+		String message = editText.getText().toString();
+		intent.putExtra(EXTRA_MESSAGE, message);
+		*/
+		startService(intent);
+		
 	}
     
 	private void stopLogging() {
-	    if (mIsBound) {
-	        // Detach our existing connection.
-	        Toast.makeText(MainActivity.this, "unbinding", Toast.LENGTH_SHORT).show();	 	    	
-	        unbindService(mConnection);
-	        mIsBound = false;
-	    }
+//	    if (mIsBound) {
+//	        // Detach our existing connection.
+//	        Toast.makeText(MainActivity.this, "unbinding", Toast.LENGTH_SHORT).show();	 	    	
+//	        unbindService(mConnection);
+//	        mIsBound = false;
+//	    }
+		Intent intent = new Intent(this, AccelerometerLoggerService.class);
+		stopService(intent);		
 	}
 	
 	private void updateUI(boolean isLogging) {
@@ -87,15 +128,6 @@ public class MainActivity extends Activity {
 		}
 	}
     
-	private void startLogging2() {
-		Intent intent = new Intent(this, AccelerometerLoggerService.class);
-		/*
-		EditText editText = (EditText) findViewById(R.id.edit_message);
-		String message = editText.getText().toString();
-		intent.putExtra(EXTRA_MESSAGE, message);
-		*/
-		startService(intent);
-	}
 
 
 }

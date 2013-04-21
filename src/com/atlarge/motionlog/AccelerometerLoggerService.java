@@ -22,36 +22,39 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.support.v4.content.LocalBroadcastManager;
 import android.widget.Toast;
 
 @SuppressWarnings("unused")
 public class AccelerometerLoggerService extends Service implements SensorEventListener {
+	public static final String ACTION_LOGSTARTED = "com.atlarge.motionlog.logstarted";
+	public static final String ACTION_LOGSTOPPED = "com.atlarge.motionlog.logstopped";
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
     private File logFile;
 	private FileOutputStream logOutputStream;
 	private PrintWriter logWriter;
-//	private NotificationManager mNM;
-	
+
+/*	
     // Unique Identification Number for the Notification.
     // We use it on Notification start, and to cancel it.
     private int NOTIFICATION = R.string.local_service_started;
-	
+*/	
     /**
      * Class for clients to access.  Because we know this service always
      * runs in the same process as its clients, we don't need to deal with
      * IPC.
      */
-    public class LocalBinder extends Binder {
-    	AccelerometerLoggerService getService() {
-            return AccelerometerLoggerService.this;
-        }
-    }
+//    public class LocalBinder extends Binder {
+//    	AccelerometerLoggerService getService() {
+//            return AccelerometerLoggerService.this;
+//        }
+//    }
     
     // This is the object that receives interactions from clients.  See
     // RemoteService for a more complete example.
-    private final IBinder mBinder = new LocalBinder();
-    
+//    private final IBinder mBinder = new LocalBinder();
+//    
 /*    
 	private Looper mServiceLooper;
 	private ServiceHandler mServiceHandler;
@@ -96,7 +99,6 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 //			 	android.os.Process.THREAD_PRIORITY_DEFAULT);
 //		thread.start();
 		
-		startLogging();
 /*		
 		// Get the HandlerThread's Looper and use it for our Handler 
 		mServiceLooper = thread.getLooper();
@@ -106,9 +108,13 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-	    
+		if (startLogging()) {
+			return START_STICKY;
+		} else {
+			return 0;
+		}
 		// If we get killed, after returning from here, restart
-		return START_STICKY;
+		
 
 /*		
 		// For each start request, send a message to start a job and deliver the
@@ -122,7 +128,8 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 
     @Override
     public IBinder onBind(Intent intent) {
-        return mBinder;
+//        return mBinder;
+    	return null;
     }
 		  
     private boolean startLogging() {
@@ -150,7 +157,12 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
         mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
 
         // Toast notification
-//		Toast.makeText(this, "Starting logging", Toast.LENGTH_SHORT).show();
+		Toast.makeText(this, "Starting logging", Toast.LENGTH_SHORT).show();
+		
+		// Broadcast notification
+		Intent i = new Intent();
+        i.setAction(ACTION_LOGSTARTED);
+		LocalBroadcastManager.getInstance(this).sendBroadcast(i);
 		
 		return true;
     }
@@ -173,6 +185,9 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	*/		
 //			Toast.makeText(this, "Logging stopped", Toast.LENGTH_SHORT).show();
     	}
+		Intent i = new Intent();
+        i.setAction(ACTION_LOGSTOPPED);
+		LocalBroadcastManager.getInstance(this).sendBroadcast(i);
     }
     
 	@Override
