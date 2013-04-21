@@ -7,6 +7,7 @@ import java.io.PrintWriter;
 
 import android.annotation.SuppressLint;
 import android.app.IntentService;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -14,6 +15,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Binder;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -29,6 +31,26 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
     private File logFile;
 	private FileOutputStream logOutputStream;
 	private PrintWriter logWriter;
+//	private NotificationManager mNM;
+	
+    // Unique Identification Number for the Notification.
+    // We use it on Notification start, and to cancel it.
+    private int NOTIFICATION = R.string.local_service_started;
+	
+    /**
+     * Class for clients to access.  Because we know this service always
+     * runs in the same process as its clients, we don't need to deal with
+     * IPC.
+     */
+    public class LocalBinder extends Binder {
+    	AccelerometerLoggerService getService() {
+            return AccelerometerLoggerService.this;
+        }
+    }
+    
+    // This is the object that receives interactions from clients.  See
+    // RemoteService for a more complete example.
+    private final IBinder mBinder = new LocalBinder();
     
 /*    
 	private Looper mServiceLooper;
@@ -63,14 +85,18 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 */
 	@Override
 	public void onCreate() {
+//		mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+		
 		// Start up the thread running the service.  Note that we create a
 		// separate thread because the service normally runs in the process's
 		// main thread, which we don't want to block.  We also make it
 		// background priority so CPU-intensive work will not disrupt our UI.
-		HandlerThread thread = new HandlerThread("ServiceStartArguments",
-			 	android.os.Process.THREAD_PRIORITY_DEFAULT);
-		thread.start();
-
+		
+//		HandlerThread thread = new HandlerThread("ServiceStartArguments",
+//			 	android.os.Process.THREAD_PRIORITY_DEFAULT);
+//		thread.start();
+		
+		startLogging();
 /*		
 		// Get the HandlerThread's Looper and use it for our Handler 
 		mServiceLooper = thread.getLooper();
@@ -80,14 +106,33 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
+	    
+		// If we get killed, after returning from here, restart
+		return START_STICKY;
+
+/*		
+		// For each start request, send a message to start a job and deliver the
+		// start ID so we know which request we're stopping when we finish the job
+		Message msg = mServiceHandler.obtainMessage();
+		msg.arg1 = startId;
+		mServiceHandler.sendMessage(msg);
+*/		
+		
+	}
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return mBinder;
+    }
+		  
+    private boolean startLogging() {
 	    String state = Environment.getExternalStorageState();
 	    if (!Environment.MEDIA_MOUNTED.equals(state)) {
 			Toast.makeText(this, "External storage unavailable: can't start log", Toast.LENGTH_SHORT).show();
 	        stopSelf();
-	        return START_NOT_STICKY;
+	        return false;
 	    } // else: we know the external storage is available
 	    
-		
         // Create a file
         logFile = new File(Environment.getExternalStoragePublicDirectory(
         	Environment.DIRECTORY_DOWNLOADS), "Motionlog.txt");
@@ -105,45 +150,34 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
         mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
 
         // Toast notification
-		Toast.makeText(this, "service starting", Toast.LENGTH_SHORT).show();
-        
-		// If we get killed, after returning from here, restart
-		return START_STICKY;
-
-/*		
-		// For each start request, send a message to start a job and deliver the
-		// start ID so we know which request we're stopping when we finish the job
-		Message msg = mServiceHandler.obtainMessage();
-		msg.arg1 = startId;
-		mServiceHandler.sendMessage(msg);
-*/		
+//		Toast.makeText(this, "Starting logging", Toast.LENGTH_SHORT).show();
 		
-	}
-
-	@Override
-	public IBinder onBind(Intent intent) {
-		// We don't provide binding, so return null
-		return null;
-	}
-		  
+		return true;
+    }
+    private void stopLogging() {
+    	if (mSensorManager != null) {
+			mSensorManager.unregisterListener(this);
+	/*		
+			try {
+				synchronized (this) {
+					wait(250); 
+	            }
+				logWriter.close();
+				logWriter = null;
+				logOutputStream.close();
+				logOutputStream = null;
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+	*/		
+//			Toast.makeText(this, "Logging stopped", Toast.LENGTH_SHORT).show();
+    	}
+    }
+    
 	@Override
 	public void onDestroy() {
-		mSensorManager.unregisterListener(this);
-/*		
-		try {
-			synchronized (this) {
-				wait(250); 
-            }
-			logWriter.close();
-			logWriter = null;
-			logOutputStream.close();
-			logOutputStream = null;
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-*/		
-		Toast.makeText(this, "service done", Toast.LENGTH_SHORT).show(); 
+		stopLogging();
 	}
 
 	@Override

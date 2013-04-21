@@ -6,5 +6,6 @@
     <string name="hello_world">Hello world!</string>
     <string name="button_start">Start</string>
     <string name="button_stop">Stop</string>
+    <string name="local_service_started">local_service_started</string>
 
 </resources>
