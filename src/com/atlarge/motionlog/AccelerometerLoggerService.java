@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 import android.annotation.SuppressLint;
 import android.app.IntentService;
@@ -29,6 +32,7 @@ import android.widget.Toast;
 public class AccelerometerLoggerService extends Service implements SensorEventListener {
 	public static final String ACTION_LOGSTARTED = "com.atlarge.motionlog.logstarted";
 	public static final String ACTION_LOGSTOPPED = "com.atlarge.motionlog.logstopped";
+	public static final String APPLICATION_DIR = "com.atlarge.motionlog";
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
     private File logFile;
@@ -141,8 +145,20 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	    } // else: we know the external storage is available
 	    
         // Create a file
-        logFile = new File(Environment.getExternalStoragePublicDirectory(
-        	Environment.DIRECTORY_DOWNLOADS), "Motionlog.txt");
+	    File logDir = new File(Environment.getExternalStorageDirectory(), APPLICATION_DIR);
+	    if (!logDir.exists()) {
+	        if (!logDir.mkdirs()) {
+	        	// Trouble creating directory
+				Toast.makeText(this, "Cannot create app directory", Toast.LENGTH_SHORT).show();
+		        stopSelf();
+		        return false;
+	        }
+	    }
+
+	    SimpleDateFormat formatter = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss", Locale.US);
+	    Date now = new Date();
+	    String logFN = formatter.format(now) + ".txt";
+        logFile = new File(logDir.getAbsolutePath(), logFN);
         try {
         	logOutputStream = new FileOutputStream(logFile);
 	        logWriter = new PrintWriter(logOutputStream);
