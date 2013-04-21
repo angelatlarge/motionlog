@@ -22,6 +22,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.widget.Toast;
 
+@SuppressWarnings("unused")
 public class AccelerometerLoggerService extends Service implements SensorEventListener {
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
@@ -79,15 +80,14 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		Toast.makeText(this, "service starting", Toast.LENGTH_SHORT).show();
-
-/*		
-		// For each start request, send a message to start a job and deliver the
-		// start ID so we know which request we're stopping when we finish the job
-		Message msg = mServiceHandler.obtainMessage();
-		msg.arg1 = startId;
-		mServiceHandler.sendMessage(msg);
-*/		
+	    String state = Environment.getExternalStorageState();
+	    if (!Environment.MEDIA_MOUNTED.equals(state)) {
+			Toast.makeText(this, "External storage unavailable: can't start log", Toast.LENGTH_SHORT).show();
+	        stopSelf();
+	        return START_NOT_STICKY;
+	    } // else: we know the external storage is available
+	    
+		
         // Create a file
         logFile = new File(Environment.getExternalStoragePublicDirectory(
         	Environment.DIRECTORY_DOWNLOADS), "Motionlog.txt");
@@ -104,8 +104,20 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
 
+        // Toast notification
+		Toast.makeText(this, "service starting", Toast.LENGTH_SHORT).show();
+        
 		// If we get killed, after returning from here, restart
 		return START_STICKY;
+
+/*		
+		// For each start request, send a message to start a job and deliver the
+		// start ID so we know which request we're stopping when we finish the job
+		Message msg = mServiceHandler.obtainMessage();
+		msg.arg1 = startId;
+		mServiceHandler.sendMessage(msg);
+*/		
+		
 	}
 
 	@Override
@@ -117,6 +129,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	@Override
 	public void onDestroy() {
 		mSensorManager.unregisterListener(this);
+/*		
 		try {
 			synchronized (this) {
 				wait(250); 
@@ -129,6 +142,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+*/		
 		Toast.makeText(this, "service done", Toast.LENGTH_SHORT).show(); 
 	}
 
@@ -140,7 +154,6 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 
 	@Override
 	public void onSensorChanged(SensorEvent event) {
-		// TODO Auto-generated method stub
         try {
         	logWriter.print(event.timestamp);
         	for (int i=0;i<event.values.length;i++)

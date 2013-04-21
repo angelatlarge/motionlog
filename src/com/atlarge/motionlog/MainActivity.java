@@ -25,7 +25,7 @@ public class MainActivity extends Activity {
 	
 	public void startStopButtonClick(View view) {
 		Button btn = (Button)findViewById(R.id.button_startstop);
-		if (flagStarted) {
+		if (!flagStarted) {
 			startLogging();
 			btn.setText("Stop");			
 		} else {
