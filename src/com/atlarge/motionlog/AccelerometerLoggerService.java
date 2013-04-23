@@ -42,7 +42,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	public static final int INTENTCOMMAND_STARTLOGGING	= 0x02;
 	public static final int INTENTCOMMAND_STOPLOGGING	= 0x03;
 	public static final String INTENTEXTRA_UPDATERATE = "com.atlarge.updaterate";
-	public static final String INTENTEXTRA_SERVICERUNNING = "com.atlarge.servicerunning";
+	public static final String INTENTEXTRA_STATUS_FORCENOTIFYFLAG = "com.atlarge.status.forcenotifyflag";
 	private static final int NOTIFICATIONID_INPROGRESS = 001;
 	public static final int DEFAULT_SENSOR_RATE = SensorManager.SENSOR_DELAY_NORMAL;
 	private Looper mServiceLooper;
@@ -106,6 +106,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 //		Toast.makeText(this, "Service starting", Toast.LENGTH_SHORT).show();
 
 		// Need to parse the intent for command
+		boolean forceNotifyFlag = false;
 	    Bundle extras = intent.getExtras();
 	    if(extras != null) {
 	    	int startCommand = extras.getInt(INTENTEXTRA_COMMAND, INTENTCOMMAND_RETURNSTATUS);
@@ -123,9 +124,11 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 				stopLogging();
 				break;
 			}
+			// Check the new notify flag
+			forceNotifyFlag =  extras.getBoolean(INTENTEXTRA_STATUS_FORCENOTIFYFLAG, false);
 	    }
 
-		performStatusUpdate();
+		performStatusUpdate(forceNotifyFlag);
 		
 		// If we get killed, after returning from here, restart
 		return START_STICKY;
@@ -206,7 +209,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 		// Updating activities performStatusUpdate() will be called elsewhere
     }
     
-	private void performStatusUpdate() {
+	private void performStatusUpdate(boolean forceNotificationFlag) {
 		// Broadcast notification
 		Intent i = new Intent();
 		if (logging) {
@@ -214,6 +217,9 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 		} else {
 			i.setAction(ACTION_STATUS_NOTLOGGING);
 		}		
+		if (forceNotificationFlag) {
+			i.putExtra(INTENTEXTRA_STATUS_FORCENOTIFYFLAG, true);
+		}
 		LocalBroadcastManager.getInstance(this).sendBroadcast(i);
 	}
 	
@@ -248,7 +254,6 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 		Intent resultIntent = new Intent(this, MainActivity.class);
 		resultIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 		resultIntent.putExtra(INTENTEXTRA_UPDATERATE, mSensorRate);
-		resultIntent.putExtra(INTENTEXTRA_SERVICERUNNING, true);
 		// Because clicking the notification opens a new ("special") activity, there's
 		// no need to create an artificial back stack.
 		PendingIntent returnPendingIntent =

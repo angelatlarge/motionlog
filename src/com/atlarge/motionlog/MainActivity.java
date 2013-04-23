@@ -33,9 +33,15 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 	  	@Override
 	  	public void onReceive(Context context, Intent intent) {
 	  		// Get extra data included in the Intent
+			Bundle extras = intent.getExtras();
+			// Get the notification flag
+			boolean forceNotifyFlag = false;
+			if (extras != null) {  
+				forceNotifyFlag =  extras.getBoolean(AccelerometerLoggerService.INTENTEXTRA_STATUS_FORCENOTIFYFLAG, false);
+			}
+			// Process the intent action
 	  		if (intent.getAction().equals(AccelerometerLoggerService.ACTION_STATUS_LOGGING)) {
 	  			updateButtonUI(true);
-				Bundle extras = intent.getExtras();
 				int sensorRate = AccelerometerLoggerService.DEFAULT_SENSOR_RATE;
 				if(extras != null) {
 					Log.d("MainActivity", "updateUIFromIntent: found extras");		
@@ -43,11 +49,13 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 				}
 				updateDelayUI(sensorRate);
 		  		mIsLogging = true;
-//		  		Toast.makeText(MainActivity.this, "Logging started", Toast.LENGTH_SHORT).show();	 	    	
+				if (forceNotifyFlag)
+					Toast.makeText(MainActivity.this, "Logging started", Toast.LENGTH_SHORT).show();	 	    	
 	  		} else if (intent.getAction().equals(AccelerometerLoggerService.ACTION_STATUS_NOTLOGGING)) {
 	  			updateButtonUI(false);
 		  		mIsLogging = false;
-//		  		Toast.makeText(MainActivity.this, "Logging stopped", Toast.LENGTH_SHORT).show();	 	    	
+				if (forceNotifyFlag)
+					Toast.makeText(MainActivity.this, "Logging stopped", Toast.LENGTH_SHORT).show();	 	    	
 	  		} else {
 	  			// Captured unknown intent
 	  		}
@@ -178,6 +186,8 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		Intent intent = new Intent(this, AccelerometerLoggerService.class);
 		intent.putExtra(AccelerometerLoggerService.INTENTEXTRA_COMMAND, AccelerometerLoggerService.INTENTCOMMAND_STARTLOGGING);
 		intent.putExtra(AccelerometerLoggerService.INTENTEXTRA_UPDATERATE, sensorRate);
+		intent.putExtra(AccelerometerLoggerService.INTENTEXTRA_STATUS_FORCENOTIFYFLAG, true);
+
 		ComponentName startResult = startService(intent);
 		if (startResult==null) {
 			Log.e("MainActivity", "Unable to issue start logging command via startService");
@@ -190,6 +200,7 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		// Communicate with the service via the startService command
 		Intent intent = new Intent(this, AccelerometerLoggerService.class);
 		intent.putExtra(AccelerometerLoggerService.INTENTEXTRA_COMMAND, AccelerometerLoggerService.INTENTCOMMAND_STOPLOGGING);
+		intent.putExtra(AccelerometerLoggerService.INTENTEXTRA_STATUS_FORCENOTIFYFLAG, true);
 		ComponentName startResult = startService(intent);
 		if (startResult==null) {
 			Log.e("MainActivity", "Unable to issue stop logging command via startService");
