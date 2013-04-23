@@ -123,7 +123,7 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 	
 	
 	private void connectToService() {
-		Log.d("MainActivity", "Starting service");
+		Log.d("MainActivity", "Starting the service");
 		
 		Intent startIntent = new Intent(this, AccelerometerLoggerService.class);
 		startIntent.putExtra(AccelerometerLoggerService.INTENTEXTRA_COMMAND, AccelerometerLoggerService.INTENTCOMMAND_RETURNSTATUS);
@@ -131,15 +131,18 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		if (startResult==null) {
 			Log.e("MainActivity", "Unable to start our service");
 		} else {
-			Log.d("MainActivity", "Started a service will bind");
+			Log.d("MainActivity", "Started the service");
 		}
 	}
 
 	private void stopService() {
+		Log.d("MainActivity", "stopService()");
 		Intent stopIntent = new Intent(this, AccelerometerLoggerService.class);
 		boolean stopResult = stopService(stopIntent);
-		if (!stopResult) {
-			Log.d("MainActivity", "Unable to stop service");
+		if (stopResult) {
+			Log.d("MainActivity", "Service stopped");
+		} else {
+			Log.d("MainActivity", "stopService() returned false");
 		}
 	}
 	
@@ -170,22 +173,29 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		} else {
 			sensorRate = AccelerometerLoggerService.DEFAULT_SENSOR_RATE;
 		}
-					
+
+		// Communicate with the service via the startService command
 		Intent intent = new Intent(this, AccelerometerLoggerService.class);
+		intent.putExtra(AccelerometerLoggerService.INTENTEXTRA_COMMAND, AccelerometerLoggerService.INTENTCOMMAND_STARTLOGGING);
 		intent.putExtra(AccelerometerLoggerService.INTENTEXTRA_UPDATERATE, sensorRate);
-		startService(intent);
-		
+		ComponentName startResult = startService(intent);
+		if (startResult==null) {
+			Log.e("MainActivity", "Unable to issue start logging command via startService");
+		} else {
+			Log.d("MainActivity", "Issued start logging command successfully");
+		}
 	}
     
 	private void stopLogging() {
-//	    if (mIsBound) {
-//	        // Detach our existing connection.
-//	        Toast.makeText(MainActivity.this, "unbinding", Toast.LENGTH_SHORT).show();	 	    	
-//	        unbindService(mConnection);
-//	        mIsBound = false;
-//	    }
+		// Communicate with the service via the startService command
 		Intent intent = new Intent(this, AccelerometerLoggerService.class);
-		stopService(intent);		
+		intent.putExtra(AccelerometerLoggerService.INTENTEXTRA_COMMAND, AccelerometerLoggerService.INTENTCOMMAND_STOPLOGGING);
+		ComponentName startResult = startService(intent);
+		if (startResult==null) {
+			Log.e("MainActivity", "Unable to issue stop logging command via startService");
+		} else {
+			Log.d("MainActivity", "Issued stop logging command successfully");
+		}
 	}
 	
 	@Override

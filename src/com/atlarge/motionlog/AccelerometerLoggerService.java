@@ -70,10 +70,13 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 		public void handleMessage(Message msg) {
 			switch (msg.arg1) {
 				case MSG_STARTLOGGING: 
+					Log.d("AccelerometerLoggerService", "MSG_STARTLOGGING command received");
 					break;
 				case MSG_STOPLOGGING: 
+					Log.d("AccelerometerLoggerService", "MSG_STOPLOGGING command received");
 					break;
 				case MSG_GETSTATUS: 
+					Log.d("AccelerometerLoggerService", "MSG_GETSTATUS command received");
 					break;
 				default: 
 					break;
@@ -109,11 +112,14 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 			switch (startCommand) {
 			case INTENTCOMMAND_RETURNSTATUS:
 				// We don't process this command since we retun status every time anyway
+				Log.d("AccelerometerLoggerService", "INTENTCOMMAND_RETURNSTATUS command received");
 				break;
 			case INTENTCOMMAND_STARTLOGGING:
+				Log.d("AccelerometerLoggerService", "INTENTCOMMAND_STARTLOGGING command received");
 				startLogging();
 				break;
 			case INTENTCOMMAND_STOPLOGGING:
+				Log.d("AccelerometerLoggerService", "INTENTCOMMAND_STOPLOGGING command received");
 				stopLogging();
 				break;
 			}
@@ -141,6 +147,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
     private boolean startLogging() {
 		Log.d("AccelerometerLoggerService", "startLogging()");
 		
+/*		
 	    String state = Environment.getExternalStorageState();
 	    if (!Environment.MEDIA_MOUNTED.equals(state)) {
 			Toast.makeText(this, "External storage unavailable: can't start log", Toast.LENGTH_SHORT).show();
@@ -171,24 +178,34 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
             e.printStackTrace();
 			return false;
         }    
-        
+*/        
 		// Here we know logging is going to start
 		logging = true;
 		
         // Create a notification
         notificationStart();
         
+/*        
 		// Register for sensor events
         mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         mSensorManager.registerListener(this, mAccelerometer, mSensorRate, mServiceHandler);
-
+*/
         // Toast notification
 //		Toast.makeText(this, String.format("Starting logging at rate %d", mSensorRate), Toast.LENGTH_SHORT).show();
 				
 		return true;
     }
-	
+
+    private void stopLogging() {
+    	if (mSensorManager != null) {
+			mSensorManager.unregisterListener(this);
+    	}
+		notificationEnd();
+		logging = false;
+		// Updating activities performStatusUpdate() will be called elsewhere
+    }
+    
 	private void performStatusUpdate() {
 		// Broadcast notification
 		Intent i = new Intent();
@@ -200,14 +217,6 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 		LocalBroadcastManager.getInstance(this).sendBroadcast(i);
 	}
 	
-    private void stopLogging() {
-    	if (mSensorManager != null) {
-			mSensorManager.unregisterListener(this);
-    	}
-		notificationEnd();
-		logging = false;
-		// Updating activities performStatusUpdate() will be called elsewhere
-    }
 	
 	@Override
 	public void onAccuracyChanged(Sensor sensor, int accuracy) {
