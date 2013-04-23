@@ -149,8 +149,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	
     private boolean startLogging() {
 		Log.d("AccelerometerLoggerService", "startLogging()");
-		
-/*		
+				
 	    String state = Environment.getExternalStorageState();
 	    if (!Environment.MEDIA_MOUNTED.equals(state)) {
 			Toast.makeText(this, "External storage unavailable: can't start log", Toast.LENGTH_SHORT).show();
@@ -181,26 +180,24 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
             e.printStackTrace();
 			return false;
         }    
-*/        
+        
 		// Here we know logging is going to start
 		logging = true;
 		
         // Create a notification
         notificationStart();
         
-/*        
 		// Register for sensor events
         mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         mSensorManager.registerListener(this, mAccelerometer, mSensorRate, mServiceHandler);
-*/
-        // Toast notification
-//		Toast.makeText(this, String.format("Starting logging at rate %d", mSensorRate), Toast.LENGTH_SHORT).show();
-				
+
 		return true;
     }
 
     private void stopLogging() {
+		//* TODO: Would like to close the files when logging stops, 
+		//			although as currently written, new file will be created every time the logging starts
     	if (mSensorManager != null) {
 			mSensorManager.unregisterListener(this);
     	}
@@ -232,6 +229,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	
 	@Override
 	public void onSensorChanged(SensorEvent event) {
+		Log.v("AccelerometerLoggerService", "onSensorChanged");
         try {
         	logWriter.print(event.timestamp);
         	for (int i=0;i<event.values.length;i++)
