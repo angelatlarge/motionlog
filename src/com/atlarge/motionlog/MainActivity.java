@@ -26,44 +26,28 @@ import android.hardware.SensorManager;
 public class MainActivity extends Activity  implements OnItemSelectedListener {
 	private static final int SENSORUPDATESPEED_NOSELECTION = -1;
     private AccelerometerLoggerService mService;
-    private boolean mBound = false;
 	private boolean mIsLogging = false;
 	private int mSensorUpdateSpeed = SENSORUPDATESPEED_NOSELECTION;
-//	private boolean mIsBound = false;
-//	private AccelerometerLoggerService mBoundService;
-	
-	
-    /** Defines callbacks for service binding, passed to bindService() */
-    private ServiceConnection mConnection = new ServiceConnection() {
-
-        @Override
-        public void onServiceConnected(ComponentName className, IBinder service) {
-            // We've bound to LocalService, cast the IBinder and get LocalService instance
-			Log.d("ServiceConnection", "onServiceConnected");
-			AccelerometerLoggerService.LocalBinder binder = (AccelerometerLoggerService.LocalBinder) service;
-            mService = binder.getService();
-            mBound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName arg0) {
-			Log.d("ServiceConnection", "onServiceDisconnected");
-            mBound = false;
-        }
-    };
 	
 	private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
 	  	@Override
 	  	public void onReceive(Context context, Intent intent) {
 	  		// Get extra data included in the Intent
-	  		if (intent.getAction().equals(AccelerometerLoggerService.ACTION_LOGSTARTED)) {
+	  		if (intent.getAction().equals(AccelerometerLoggerService.ACTION_STATUS_LOGGING)) {
 	  			updateButtonUI(true);
+				Bundle extras = intent.getExtras();
+				int sensorRate = AccelerometerLoggerService.DEFAULT_SENSOR_RATE;
+				if(extras != null) {
+					Log.d("MainActivity", "updateUIFromIntent: found extras");		
+					sensorRate = extras.getInt(AccelerometerLoggerService.INTENTEXTRA_UPDATERATE, AccelerometerLoggerService.DEFAULT_SENSOR_RATE);
+				}
+				updateDelayUI(sensorRate);
 		  		mIsLogging = true;
-		  		Toast.makeText(MainActivity.this, "Logging started", Toast.LENGTH_SHORT).show();	 	    	
-	  		} else if (intent.getAction().equals(AccelerometerLoggerService.ACTION_LOGSTOPPED)) {
+//		  		Toast.makeText(MainActivity.this, "Logging started", Toast.LENGTH_SHORT).show();	 	    	
+	  		} else if (intent.getAction().equals(AccelerometerLoggerService.ACTION_STATUS_NOTLOGGING)) {
 	  			updateButtonUI(false);
 		  		mIsLogging = false;
-		  		Toast.makeText(MainActivity.this, "Logging stopped", Toast.LENGTH_SHORT).show();	 	    	
+//		  		Toast.makeText(MainActivity.this, "Logging stopped", Toast.LENGTH_SHORT).show();	 	    	
 	  		} else {
 	  			// Captured unknown intent
 	  		}
@@ -71,41 +55,14 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 //	  		Log.d("receiver", "Got message: " + message);
 	  	}
 	};
-
-/*		
-	private ServiceConnection mConnection = new ServiceConnection() {
-	    public void onServiceConnected(ComponentName className, IBinder service) {
-	        // This is called when the connection with the service has been
-	        // established, giving us the service object we can use to
-	        // interact with the service.  Because we have bound to a explicit
-	        // service that we know is running in our own process, we can
-	        // cast its IBinder to a concrete class and directly access it.
-	        // Tell the user about this for our demo.
-	        Toast.makeText(MainActivity.this, "connected", Toast.LENGTH_SHORT).show();	 	    	
-	        mBoundService = ((AccelerometerLoggerService.LocalBinder)service).getService();
-	        mIsLogging = true;
-	        updateUI(mIsLogging);
-	    }
-
-	    public void onServiceDisconnected(ComponentName className) {
-	        // This is called when the connection with the service has been
-	        // unexpectedly disconnected -- that is, its process crashed.
-	        // Because it is running in our same process, we should never
-	        // see this happen.
-	        Toast.makeText(MainActivity.this, "disconnected", Toast.LENGTH_SHORT).show();	 	    	
-	        mBoundService = null;
-	        mIsLogging = false;
-	        updateUI(mIsLogging);
-	    }
-	};	
-*/
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		IntentFilter filter = new IntentFilter();
-		filter.addAction(AccelerometerLoggerService.ACTION_LOGSTARTED);
-		filter.addAction(AccelerometerLoggerService.ACTION_LOGSTOPPED);
+		filter.addAction(AccelerometerLoggerService.ACTION_STATUS_LOGGING);
+		filter.addAction(AccelerometerLoggerService.ACTION_STATUS_NOTLOGGING);
 		LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver, filter);
 		
 		// Populate the spinner
@@ -117,12 +74,10 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 		// Apply the adapter to the spinner
 		spinner.setAdapter(adapter);
-		
-		// Connect to our service
-		connectToService();
-		
+				
+		// We do not connect to service updating the UI here
+		// because we do tat in onResume()
 		Log.d("MainActivity", "onCreate");
-		updateUIFromIntent(getIntent());
 	}
 
 	@Override
@@ -132,33 +87,13 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		return true;
 	}
 		
-	private void connectToService() {
-		Log.d("MainActivity", "Connecting to service");
-		// We try to bind to an existing service
-		Intent bindIntent = new Intent(this, AccelerometerLoggerService.class);
-		boolean bindResult = bindService(bindIntent, mConnection, 0);
-        if (bindResult) {
-			// Service existed, so we just bound to it
-			Log.d("MainActivity", "Found a pre-existing service and bound to it");
-		} else {
-			Log.d("MainActivity", "No pre-existing service starting one");
-			// Service did not exist so we must start it
-			
-			Intent startIntent = new Intent(this, AccelerometerLoggerService.class);
-			ComponentName startResult = startService(startIntent);
-			if (startResult==null) {
-				Log.e("MainActivity", "Unable to start our service");
-			} else {
-				Log.d("MainActivity", "Started a service will bind");
-				// Now that the service is started, we can bind to it
-				bindService(bindIntent, mConnection, 0);
-				if (!bindResult) {
-					Log.e("MainActivity", "started a service and then failed to bind to it");
-				} else {
-					Log.d("MainActivity", "Successfully bound");
-				}
-			}
-		}
+	@Override
+	public void onPause() {
+		super.onPause();
+		Log.d("MainActivity", "onPause");
+		
+		if (!mIsLogging)
+			stopService();
 	}
 	
 	@Override
@@ -166,23 +101,46 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		super.onResume();  // Always call the superclass method first
 		Log.d("MainActivity", "onResume");
 		
-		// TODO: Reconnect to the service
+		// Connect to our service, which will update the UI
+		connectToService();
+
 	}
 	
 	@Override
 	public void onRestart() {
 		super.onRestart();  // Always call the superclass method first
 		Log.d("MainActivity", "onRestart");
-		
-		// TODO: Reconnect to the service
 	}
 	
 	@Override
 	public void onStop() {
 	    super.onStop();  // Always call the superclass method first
 		Log.d("MainActivity", "onStop");
+		
+		if (!mIsLogging)
+			stopService();
+	}
+	
+	
+	private void connectToService() {
+		Log.d("MainActivity", "Starting service");
+		
+		Intent startIntent = new Intent(this, AccelerometerLoggerService.class);
+		startIntent.putExtra(AccelerometerLoggerService.INTENTEXTRA_COMMAND, AccelerometerLoggerService.INTENTCOMMAND_RETURNSTATUS);
+		ComponentName startResult = startService(startIntent);
+		if (startResult==null) {
+			Log.e("MainActivity", "Unable to start our service");
+		} else {
+			Log.d("MainActivity", "Started a service will bind");
+		}
+	}
 
-	    // TODO: Reconnect to the service
+	private void stopService() {
+		Intent stopIntent = new Intent(this, AccelerometerLoggerService.class);
+		boolean stopResult = stopService(stopIntent);
+		if (!stopResult) {
+			Log.d("MainActivity", "Unable to stop service");
+		}
 	}
 	
 	public void startStopButtonClick(View view) {
@@ -230,15 +188,6 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		stopService(intent);		
 	}
 	
-	private void updateButtonUI(boolean isLogging) {
-		Button btn = (Button)findViewById(R.id.button_startstop);
-		if (isLogging) {
-			btn.setText("Stop");			
-		} else {
-			btn.setText("Start");			
-		}
-	}
-
 	@Override
 	public void onItemSelected(AdapterView<?> parent, View view,  int pos, long id) {
 		// An item was selected. You can retrieve the selected item using
@@ -251,21 +200,19 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		// TODO Auto-generated method stub
 		mSensorUpdateSpeed = SENSORUPDATESPEED_NOSELECTION;
 	}
-    
-	private void updateUIFromIntent(Intent intent) {
-		Log.d("MainActivity", "updateUIFromIntent");		
-		int SensorRate = AccelerometerLoggerService.DEFAULT_SENSOR_RATE;
-		boolean LoggerStarted = false; 
-	    Bundle extras = intent.getExtras();
-	    if(extras != null) {
-	    	SensorRate = extras.getInt(AccelerometerLoggerService.INTENTEXTRA_UPDATERATE, AccelerometerLoggerService.DEFAULT_SENSOR_RATE);
-	    	LoggerStarted =  extras.getBoolean(AccelerometerLoggerService.INTENTEXTRA_SERVICERUNNING, true);
-			Log.d("MainActivity", "updateUIFromIntent: found extras");		
-	    }
-	    updateButtonUI(LoggerStarted);
-	    mIsLogging = LoggerStarted;
+
+	private void updateButtonUI(boolean isLogging) {
+		Button btn = (Button)findViewById(R.id.button_startstop);
+		if (isLogging) {
+			btn.setText("Stop");			
+		} else {
+			btn.setText("Start");			
+		}
+	}
+	
+	private void updateDelayUI(int sensorRate) {
 		Spinner spinner = (Spinner) findViewById(R.id.spinner_updatefrequency);
-	    switch (SensorRate) {
+	    switch (sensorRate) {
 	    case SensorManager.SENSOR_DELAY_NORMAL : spinner.setSelection(0); break;
 	    case SensorManager.SENSOR_DELAY_UI : spinner.setSelection(1); break;
 	    case SensorManager.SENSOR_DELAY_GAME : spinner.setSelection(2); break;
@@ -277,8 +224,6 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 	@Override
 	protected void onNewIntent (Intent intent) {
 		super.onNewIntent(intent);
-		updateUIFromIntent(intent);
-	    
 	}
 	
 

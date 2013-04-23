@@ -34,33 +34,26 @@ import android.widget.Toast;
 
 @SuppressWarnings("unused")
 public class AccelerometerLoggerService extends Service implements SensorEventListener {
-	public static final String ACTION_LOGSTARTED = "com.atlarge.motionlog.logstarted";
-	public static final String ACTION_LOGSTOPPED = "com.atlarge.motionlog.logstopped";
+	public static final String ACTION_STATUS_LOGGING = "com.atlarge.motionlog.status.logging";
+	public static final String ACTION_STATUS_NOTLOGGING = "com.atlarge.motionlog.status.notlogging";
 	public static final String APPLICATION_DIR = "com.atlarge.motionlog";
+	public static final String INTENTEXTRA_COMMAND = "com.atlarge.servicecommand";
+	public static final int INTENTCOMMAND_RETURNSTATUS	= 0x01;
+	public static final int INTENTCOMMAND_STARTLOGGING	= 0x02;
+	public static final int INTENTCOMMAND_STOPLOGGING	= 0x03;
 	public static final String INTENTEXTRA_UPDATERATE = "com.atlarge.updaterate";
 	public static final String INTENTEXTRA_SERVICERUNNING = "com.atlarge.servicerunning";
 	private static final int NOTIFICATIONID_INPROGRESS = 001;
 	public static final int DEFAULT_SENSOR_RATE = SensorManager.SENSOR_DELAY_NORMAL;
-    private final IBinder mBinder = new LocalBinder();	// Binder given to clients
 	private Looper mServiceLooper;
 	private ServiceHandler mServiceHandler;
+	private boolean logging = false;
     private File logFile;
 	private FileOutputStream logOutputStream;
 	private PrintWriter logWriter;
 	private int mSensorRate = DEFAULT_SENSOR_RATE;
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
-
-    /**
-     * Class used for the client Binder.  Because we know this service always
-     * runs in the same process as its clients, we don't need to deal with IPC.
-     */
-    public class LocalBinder extends Binder {
-    	AccelerometerLoggerService getService() {
-            // Return this instance of LocalService so clients can call public methods
-            return AccelerometerLoggerService.this;
-        }
-    }
 	
 	// Handler that receives messages from the thread
 	@SuppressLint("HandlerLeak")
@@ -107,24 +100,47 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		Log.d("AccelerometerLoggerService", "onStartCommand()");
-		Toast.makeText(this, "Service started", Toast.LENGTH_SHORT).show();
+//		Toast.makeText(this, "Service starting", Toast.LENGTH_SHORT).show();
 
+		// Need to parse the intent for command
+	    Bundle extras = intent.getExtras();
+	    if(extras != null) {
+	    	int startCommand = extras.getInt(INTENTEXTRA_COMMAND, INTENTCOMMAND_RETURNSTATUS);
+			switch (startCommand) {
+			case INTENTCOMMAND_RETURNSTATUS:
+				// We don't process this command since we retun status every time anyway
+				break;
+			case INTENTCOMMAND_STARTLOGGING:
+				startLogging();
+				break;
+			case INTENTCOMMAND_STOPLOGGING:
+				stopLogging();
+				break;
+			}
+	    }
+
+		performStatusUpdate();
+		
 		// If we get killed, after returning from here, restart
 		return START_STICKY;
 	}
 
+	// We are not using a bound service
     @Override
     public IBinder onBind(Intent intent) {
 		Log.d("AccelerometerLoggerService", "onBind()");
-        return mBinder;
+        return null;
     }
   
 	@Override
 	public void onDestroy() {
-		Toast.makeText(this, "service done", Toast.LENGTH_SHORT).show(); 
+		Log.d("AccelerometerLoggerService", "onDestroy()");
+//		Toast.makeText(this, "service done", Toast.LENGTH_SHORT).show(); 
 	}
 	
     private boolean startLogging() {
+		Log.d("AccelerometerLoggerService", "startLogging()");
+		
 	    String state = Environment.getExternalStorageState();
 	    if (!Environment.MEDIA_MOUNTED.equals(state)) {
 			Toast.makeText(this, "External storage unavailable: can't start log", Toast.LENGTH_SHORT).show();
@@ -138,7 +154,6 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	        if (!logDir.mkdirs()) {
 	        	// Trouble creating directory
 				Toast.makeText(this, "Cannot create app directory", Toast.LENGTH_SHORT).show();
-		        stopSelf();
 		        return false;
 	        }
 	    }
@@ -154,8 +169,12 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	        logWriter.println("Time (ns)\tX-axis\tY-axis\tZ-axis");
         } catch (Exception e) {
             e.printStackTrace();
+			return false;
         }    
         
+		// Here we know logging is going to start
+		logging = true;
+		
         // Create a notification
         notificationStart();
         
@@ -166,38 +185,28 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 
         // Toast notification
 //		Toast.makeText(this, String.format("Starting logging at rate %d", mSensorRate), Toast.LENGTH_SHORT).show();
-		
-		// Broadcast notification
-		Intent i = new Intent();
-        i.setAction(ACTION_LOGSTARTED);
-		LocalBroadcastManager.getInstance(this).sendBroadcast(i);
-		
+				
 		return true;
     }
+	
+	private void performStatusUpdate() {
+		// Broadcast notification
+		Intent i = new Intent();
+		if (logging) {
+			i.setAction(ACTION_STATUS_LOGGING);
+		} else {
+			i.setAction(ACTION_STATUS_NOTLOGGING);
+		}		
+		LocalBroadcastManager.getInstance(this).sendBroadcast(i);
+	}
 	
     private void stopLogging() {
     	if (mSensorManager != null) {
 			mSensorManager.unregisterListener(this);
-	/*		
-			try {
-				synchronized (this) {
-					wait(250); 
-	            }
-				logWriter.close();
-				logWriter = null;
-				logOutputStream.close();
-				logOutputStream = null;
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-	*/		
-//			Toast.makeText(this, "Logging stopped", Toast.LENGTH_SHORT).show();
     	}
-		Intent i = new Intent();
-        i.setAction(ACTION_LOGSTOPPED);
-		LocalBroadcastManager.getInstance(this).sendBroadcast(i);
 		notificationEnd();
+		logging = false;
+		// Updating activities performStatusUpdate() will be called elsewhere
     }
 	
 	@Override
