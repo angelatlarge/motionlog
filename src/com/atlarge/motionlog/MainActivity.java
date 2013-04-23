@@ -82,7 +82,9 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 		// Apply the adapter to the spinner
 		spinner.setAdapter(adapter);
-				
+		// Connect the listener
+		spinner.setOnItemSelectedListener(this);
+		
 		// We do not connect to service updating the UI here
 		// because we do tat in onResume()
 		Log.d("MainActivity", "onCreate");
@@ -181,7 +183,8 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		} else {
 			sensorRate = AccelerometerLoggerService.DEFAULT_SENSOR_RATE;
 		}
-
+		Log.v("MainActivity", String.format("Using sensor rate: %d\n", sensorRate));
+			
 		// Communicate with the service via the startService command
 		Intent intent = new Intent(this, AccelerometerLoggerService.class);
 		intent.putExtra(AccelerometerLoggerService.INTENTEXTRA_COMMAND, AccelerometerLoggerService.INTENTCOMMAND_STARTLOGGING);
@@ -213,6 +216,7 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 	public void onItemSelected(AdapterView<?> parent, View view,  int pos, long id) {
 		// An item was selected. You can retrieve the selected item using
         // parent.getItemAtPosition(pos)
+		Log.v("MainActivity", String.format("New mSensorUpdateSpeed: %d\n", pos));
 		mSensorUpdateSpeed = pos;
 	}
 

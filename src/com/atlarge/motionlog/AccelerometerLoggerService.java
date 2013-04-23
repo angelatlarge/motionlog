@@ -117,6 +117,10 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 				break;
 			case INTENTCOMMAND_STARTLOGGING:
 				Log.d("AccelerometerLoggerService", "INTENTCOMMAND_STARTLOGGING command received");
+				// Pull out the update rate from the intent
+				Log.d("AccelerometerLoggerService", String.format("Old sensor rate: %d, ", mSensorRate));
+                mSensorRate = extras.getInt(INTENTEXTRA_UPDATERATE, DEFAULT_SENSOR_RATE);
+				Log.d("AccelerometerLoggerService", String.format("new sensor rate: %d\n", mSensorRate));
 				startLogging();
 				break;
 			case INTENTCOMMAND_STOPLOGGING:
@@ -208,16 +212,17 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
     
 	private void performStatusUpdate(boolean forceNotificationFlag) {
 		// Broadcast notification
-		Intent i = new Intent();
+		Intent intent = new Intent();
 		if (logging) {
-			i.setAction(ACTION_STATUS_LOGGING);
+			intent.setAction(ACTION_STATUS_LOGGING);
+			intent.putExtra(INTENTEXTRA_UPDATERATE, mSensorRate);
 		} else {
-			i.setAction(ACTION_STATUS_NOTLOGGING);
+			intent.setAction(ACTION_STATUS_NOTLOGGING);
 		}		
 		if (forceNotificationFlag) {
-			i.putExtra(INTENTEXTRA_STATUS_FORCENOTIFYFLAG, true);
+			intent.putExtra(INTENTEXTRA_STATUS_FORCENOTIFYFLAG, true);
 		}
-		LocalBroadcastManager.getInstance(this).sendBroadcast(i);
+		LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
 	}
 	
 	
@@ -251,7 +256,6 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 		
 		Intent resultIntent = new Intent(this, MainActivity.class);
 		resultIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-		resultIntent.putExtra(INTENTEXTRA_UPDATERATE, mSensorRate);
 		// Because clicking the notification opens a new ("special") activity, there's
 		// no need to create an artificial back stack.
 		PendingIntent returnPendingIntent =
