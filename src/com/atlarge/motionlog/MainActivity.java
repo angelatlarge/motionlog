@@ -38,11 +38,11 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 	  		if (intent.getAction().equals(AccelerometerLoggerService.ACTION_LOGSTARTED)) {
 	  			updateButtonUI(true);
 		  		mIsLogging = true;
-		  		Toast.makeText(MainActivity.this, "log stated", Toast.LENGTH_SHORT).show();	 	    	
+		  		Toast.makeText(MainActivity.this, "Logging started", Toast.LENGTH_SHORT).show();	 	    	
 	  		} else if (intent.getAction().equals(AccelerometerLoggerService.ACTION_LOGSTOPPED)) {
 	  			updateButtonUI(false);
 		  		mIsLogging = false;
-		  		Toast.makeText(MainActivity.this, "log stopped", Toast.LENGTH_SHORT).show();	 	    	
+		  		Toast.makeText(MainActivity.this, "Logging stopped", Toast.LENGTH_SHORT).show();	 	    	
 	  		} else {
 	  			// Captured unknown intent
 	  		}
