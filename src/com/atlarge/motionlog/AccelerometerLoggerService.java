@@ -40,115 +40,86 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	public static final String INTENTEXTRA_SERVICERUNNING = "com.atlarge.servicerunning";
 	private static final int NOTIFICATIONID_INPROGRESS = 001;
 	public static final int DEFAULT_SENSOR_RATE = SensorManager.SENSOR_DELAY_NORMAL;
-    private SensorManager mSensorManager;
-    private Sensor mAccelerometer;
+    private final IBinder mBinder = new LocalBinder();	// Binder given to clients
+	private Looper mServiceLooper;
+	private ServiceHandler mServiceHandler;
     private File logFile;
 	private FileOutputStream logOutputStream;
 	private PrintWriter logWriter;
 	private int mSensorRate = DEFAULT_SENSOR_RATE;
+    private SensorManager mSensorManager;
+    private Sensor mAccelerometer;
 
-/*	
-    // Unique Identification Number for the Notification.
-    // We use it on Notification start, and to cancel it.
-    private int NOTIFICATION = R.string.local_service_started;
-*/	
     /**
-     * Class for clients to access.  Because we know this service always
-     * runs in the same process as its clients, we don't need to deal with
-     * IPC.
+     * Class used for the client Binder.  Because we know this service always
+     * runs in the same process as its clients, we don't need to deal with IPC.
      */
-//    public class LocalBinder extends Binder {
-//    	AccelerometerLoggerService getService() {
-//            return AccelerometerLoggerService.this;
-//        }
-//    }
-    
-    // This is the object that receives interactions from clients.  See
-    // RemoteService for a more complete example.
-//    private final IBinder mBinder = new LocalBinder();
-//    
-/*    
-	private Looper mServiceLooper;
-	private ServiceHandler mServiceHandler;
-
+    public class LocalBinder extends Binder {
+        LocalService getService() {
+            // Return this instance of LocalService so clients can call public methods
+            return LocalService.this;
+        }
+    }
+	
 	// Handler that receives messages from the thread
 	@SuppressLint("HandlerLeak")
 	private final class ServiceHandler extends Handler {
-		@SuppressLint("HandlerLeak")
+		private static final int MSG_STARTLOGGING = 0x01;
+		private static final int MSG_STOPLOGGING = 0x02; 
+		private static final int MSG_GETSTATUS = 0x03;
+		
 		public ServiceHandler(Looper looper) {
 			super(looper);
 		}
 		
 		@Override
 		public void handleMessage(Message msg) {
-			// Normally we would do some work here, like download a file.
-			// For our sample, we just sleep for 5 seconds.
-			long endTime = System.currentTimeMillis() + 5*1000;
-			while (System.currentTimeMillis() < endTime) {
-				synchronized (this) {
-					try {
-						wait(endTime - System.currentTimeMillis());
-					} catch (Exception e) {
-					}
-				}
-			}
-			// Stop the service using the startId, so that we don't stop
-			// the service in the middle of handling another job
-			stopSelf(msg.arg1);
+			switch (msg.arg1) {
+				case MSG_STARTLOGGING: 
+					break;
+				case MSG_STOPLOGGING: 
+					break;
+				case MSG_GETSTATUS: 
+					break;
+				default: 
+					break;
+			}			
 		}
 	}
-*/
+
 	@Override
 	public void onCreate() {
-//		mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
-		
 		// Start up the thread running the service.  Note that we create a
 		// separate thread because the service normally runs in the process's
 		// main thread, which we don't want to block.  We also make it
 		// background priority so CPU-intensive work will not disrupt our UI.
-		
-//		HandlerThread thread = new HandlerThread("ServiceStartArguments",
-//			 	android.os.Process.THREAD_PRIORITY_DEFAULT);
-//		thread.start();
-		
-/*		
+		HandlerThread thread = new HandlerThread("ServiceStartArguments",
+				android.os.Process.THREAD_PRIORITY_BACKGROUND);
+		thread.start();
+
 		// Get the HandlerThread's Looper and use it for our Handler 
 		mServiceLooper = thread.getLooper();
 		mServiceHandler = new ServiceHandler(mServiceLooper);
-*/		
 	}
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-	    Bundle extras = intent.getExtras();
-	    if(extras != null) {
-	    	mSensorRate = extras.getInt(INTENTEXTRA_UPDATERATE, DEFAULT_SENSOR_RATE);
-	    }
-				
-		if (startLogging()) {
-			return START_STICKY;
-		} else {
-			return 0;
-		}
-		// If we get killed, after returning from here, restart
-		
+		Toast.makeText(this, "Service started", Toast.LENGTH_SHORT).show();
 
-/*		
-		// For each start request, send a message to start a job and deliver the
-		// start ID so we know which request we're stopping when we finish the job
-		Message msg = mServiceHandler.obtainMessage();
-		msg.arg1 = startId;
-		mServiceHandler.sendMessage(msg);
-*/		
-		
+		// If we get killed, after returning from here, restart
+		return START_STICKY;
 	}
 
     @Override
     public IBinder onBind(Intent intent) {
-//        return mBinder;
-    	return null;
+        return mBinder;
     }
-		  
+  
+	@Override
+	public void onDestroy() {
+		Toast.makeText(this, "service done", Toast.LENGTH_SHORT).show(); 
+	}
+	
     private boolean startLogging() {
 	    String state = Environment.getExternalStorageState();
 	    if (!Environment.MEDIA_MOUNTED.equals(state)) {
@@ -182,12 +153,12 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
         }    
         
         // Create a notification
-        startNotification();
+        notificationStart();
         
 		// Register for sensor events
         mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        mSensorManager.registerListener(this, mAccelerometer, mSensorRate);
+        mSensorManager.registerListener(this, mAccelerometer, mSensorRate, mServiceHandler);
 
         // Toast notification
 //		Toast.makeText(this, String.format("Starting logging at rate %d", mSensorRate), Toast.LENGTH_SHORT).show();
@@ -199,6 +170,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 		
 		return true;
     }
+	
     private void stopLogging() {
     	if (mSensorManager != null) {
 			mSensorManager.unregisterListener(this);
@@ -221,20 +193,15 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 		Intent i = new Intent();
         i.setAction(ACTION_LOGSTOPPED);
 		LocalBroadcastManager.getInstance(this).sendBroadcast(i);
-		stopNotification();
+		notificationEnd();
     }
-    
-	@Override
-	public void onDestroy() {
-		stopLogging();
-	}
-
+	
 	@Override
 	public void onAccuracyChanged(Sensor sensor, int accuracy) {
 		// TODO Auto-generated method stub
 		
 	}
-
+	
 	@Override
 	public void onSensorChanged(SensorEvent event) {
         try {
@@ -247,7 +214,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
         }    
 	}
 	
-	private void startNotification() {
+	private void notificationStart() {
 		NotificationCompat.Builder mBuilder =
 			    new NotificationCompat.Builder(this)
 			    .setSmallIcon(R.drawable.ic_stat_notify_logging)
@@ -281,38 +248,9 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 		
 	}
 	
-	private void stopNotification() {
+	private void notificationEnd() {
 		NotificationManager mNotifyMgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 		mNotifyMgr.cancel(NOTIFICATIONID_INPROGRESS);
 	}
-
+	
 }
-
-/*
-		Context context = getApplicationContext();
-		CharSequence text = "Logger service starting";
-		int duration = Toast.LENGTH_SHORT;
-
-		Toast toast = Toast.makeText(context, text, duration);
-		toast.show();		
-		
-		// Create an output file
-		try {
-	    File file = new File(Environment.getExternalStoragePublicDirectory(
-	            Environment.DIRECTORY_DOWNLOADS), "Motionlog.txt");
-		FileOutputStream outputStream = new FileOutputStream(file);
-        PrintWriter writer = new PrintWriter(outputStream);
-        writer.println("Hi , How are you");
-        writer.println("Hello");
-        
-        
-        	writer.flush();
-        	writer.close();
-	        outputStream.close();		
-		} catch (Exception e) {
-		  e.printStackTrace();
-		}		
-		
-		// Read accelerometer data and write it to file 
-		
-*/
