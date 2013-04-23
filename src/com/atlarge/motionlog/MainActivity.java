@@ -25,11 +25,32 @@ import android.hardware.SensorManager;
 @SuppressWarnings("unused")
 public class MainActivity extends Activity  implements OnItemSelectedListener {
 	private static final int SENSORUPDATESPEED_NOSELECTION = -1;
+    private AccelerometerLoggerService mService;
+    private boolean mBound = false;
 	private boolean mIsLogging = false;
 	private int mSensorUpdateSpeed = SENSORUPDATESPEED_NOSELECTION;
 //	private boolean mIsBound = false;
 //	private AccelerometerLoggerService mBoundService;
 	
+	
+    /** Defines callbacks for service binding, passed to bindService() */
+    private ServiceConnection mConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            // We've bound to LocalService, cast the IBinder and get LocalService instance
+			Log.d("ServiceConnection", "onServiceConnected");
+			AccelerometerLoggerService.LocalBinder binder = (AccelerometerLoggerService.LocalBinder) service;
+            mService = binder.getService();
+            mBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+			Log.d("ServiceConnection", "onServiceDisconnected");
+            mBound = false;
+        }
+    };
 	
 	private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
 	  	@Override
@@ -97,6 +118,9 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		// Apply the adapter to the spinner
 		spinner.setAdapter(adapter);
 		
+		// Connect to our service
+		connectToService();
+		
 		Log.d("MainActivity", "onCreate");
 		updateUIFromIntent(getIntent());
 	}
@@ -108,6 +132,35 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		return true;
 	}
 		
+	private void connectToService() {
+		Log.d("MainActivity", "Connecting to service");
+		// We try to bind to an existing service
+		Intent bindIntent = new Intent(this, AccelerometerLoggerService.class);
+		boolean bindResult = bindService(bindIntent, mConnection, 0);
+        if (bindResult) {
+			// Service existed, so we just bound to it
+			Log.d("MainActivity", "Found a pre-existing service and bound to it");
+		} else {
+			Log.d("MainActivity", "No pre-existing service starting one");
+			// Service did not exist so we must start it
+			
+			Intent startIntent = new Intent(this, AccelerometerLoggerService.class);
+			ComponentName startResult = startService(startIntent);
+			if (startResult==null) {
+				Log.e("MainActivity", "Unable to start our service");
+			} else {
+				Log.d("MainActivity", "Started a service will bind");
+				// Now that the service is started, we can bind to it
+				bindService(bindIntent, mConnection, 0);
+				if (!bindResult) {
+					Log.e("MainActivity", "started a service and then failed to bind to it");
+				} else {
+					Log.d("MainActivity", "Successfully bound");
+				}
+			}
+		}
+	}
+	
 	@Override
 	public void onResume() {
 		super.onResume();  // Always call the superclass method first
