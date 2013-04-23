@@ -190,7 +190,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
         mSensorManager.registerListener(this, mAccelerometer, mSensorRate);
 
         // Toast notification
-		Toast.makeText(this, String.format("Starting logging at rate %d", mSensorRate), Toast.LENGTH_SHORT).show();
+//		Toast.makeText(this, String.format("Starting logging at rate %d", mSensorRate), Toast.LENGTH_SHORT).show();
 		
 		// Broadcast notification
 		Intent i = new Intent();
@@ -250,9 +250,11 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	private void startNotification() {
 		NotificationCompat.Builder mBuilder =
 			    new NotificationCompat.Builder(this)
-			    .setSmallIcon(R.drawable.ic_launcher)
-			    .setContentTitle("My notification")
-			    .setContentText("Hello World!");
+			    .setSmallIcon(R.drawable.ic_stat_notify_logging)
+			    .setContentTitle("Motionlog logging")
+//			    .setContentTitle("")
+			    .setContentText("select to adjust")
+			    .setOngoing (true);
 		
 		Intent resultIntent = new Intent(this, MainActivity.class);
 		resultIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
