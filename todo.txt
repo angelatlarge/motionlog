@@ -1,0 +1,3 @@
+Selection of update speed doesn't work (updated by the service at the wrong time)?
+Test app installation
+Make a new UI
