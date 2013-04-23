@@ -29,6 +29,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 import android.widget.Toast;
 
 @SuppressWarnings("unused")
@@ -55,9 +56,9 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
      * runs in the same process as its clients, we don't need to deal with IPC.
      */
     public class LocalBinder extends Binder {
-        LocalService getService() {
+    	AccelerometerLoggerService getService() {
             // Return this instance of LocalService so clients can call public methods
-            return LocalService.this;
+            return AccelerometerLoggerService.this;
         }
     }
 	
@@ -89,6 +90,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 
 	@Override
 	public void onCreate() {
+		Log.d("AccelerometerLoggerService", "onCreate()");
 		// Start up the thread running the service.  Note that we create a
 		// separate thread because the service normally runs in the process's
 		// main thread, which we don't want to block.  We also make it
@@ -104,6 +106,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
+		Log.d("AccelerometerLoggerService", "onStartCommand()");
 		Toast.makeText(this, "Service started", Toast.LENGTH_SHORT).show();
 
 		// If we get killed, after returning from here, restart
@@ -112,6 +115,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 
     @Override
     public IBinder onBind(Intent intent) {
+		Log.d("AccelerometerLoggerService", "onBind()");
         return mBinder;
     }
   
