@@ -1,3 +1,4 @@
-Selection of update speed doesn't work (updated by the service at the wrong time)?
 Test app installation
 Make a new UI
+Need to implement the whole wake-lock thing from the post
+Need to look at the accelerometer lecture

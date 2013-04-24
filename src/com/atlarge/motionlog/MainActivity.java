@@ -9,15 +9,20 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.res.Resources;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.hardware.SensorManager;
 
@@ -29,6 +34,7 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 	private boolean mIsLogging = false;
 	private int mSensorUpdateSpeed = SENSORUPDATESPEED_NOSELECTION;
 	
+	/********************************************************************/
 	private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
 	  	@Override
 	  	public void onReceive(Context context, Intent intent) {
@@ -64,6 +70,42 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 	  	}
 	};
 	
+	/********************************************************************/
+	
+	public class LogSpeedAdapter extends ArrayAdapter<String>{
+
+		public LogSpeedAdapter(Context context, int textViewResourceId, String[] objects) {
+			super(context, textViewResourceId, objects);
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			return getIconicView(position, convertView, parent);
+		}
+		
+		@Override
+		public View getDropDownView(int position, View convertView, ViewGroup parent) {
+			// TODO Auto-generated method stub
+			return getIconicView(position, convertView, parent);
+		}	
+		
+		private View getIconicView(int position, View convertView, ViewGroup parent) {
+			// This is for the regular view
+			LayoutInflater inflater=getLayoutInflater();
+			View spinnerRow=inflater.inflate(R.layout.speedspin, parent, false);
+			TextView label=(TextView)spinnerRow.findViewById(R.id.speed_name);
+			Resources res = getResources();
+			String[] speeds = res.getStringArray(R.array.sensor_update_speeds);
+			label.setText(speeds[position]);
+
+			ImageView icon=(ImageView)spinnerRow.findViewById(R.id.speed_icon);
+
+			icon.setImageResource(R.drawable.ic_dialog_speed_slow);
+
+			return spinnerRow;
+		}
+	}
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -73,17 +115,32 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		filter.addAction(AccelerometerLoggerService.ACTION_STATUS_NOTLOGGING);
 		LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver, filter);
 		
-		// Populate the spinner
-		Spinner spinner = (Spinner) findViewById(R.id.spinner_updatefrequency);
+		// The speed spinner
+		Spinner spinnerSpeed = (Spinner) findViewById(R.id.spinner_updatefrequency);
 		// Create an ArrayAdapter using the string array and a default spinner layout
-		ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
-		        R.array.sensor_update_speeds, android.R.layout.simple_spinner_item);
+		//~ ArrayAdapter<CharSequence> adapter = 
+		//~		ArrayAdapter.createFromResource(this, R.array.sensor_update_speeds, android.R.layout.simple_spinner_item);
+//		ArrayAdapter<CharSequence> adapter = new LogSpeedAdapter(this, R.layout.speedspin, R.id.spinner_updatefrequency);
+		Resources res = getResources();
+		String[] speeds = res.getStringArray(R.array.sensor_update_speeds);
+		spinnerSpeed.setAdapter(new LogSpeedAdapter(this, R.layout.speedspin, speeds));
+//		spinner.setAdapter(adapter);	
+		spinnerSpeed.setOnItemSelectedListener(this);
+		
+		Spinner spinnerCaptureType = (Spinner) findViewById(R.id.spinnerCaptureType);
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
+                R.array.capture_type, android.R.layout.simple_spinner_item);
+        // Specify the layout to use when the list of choices appears
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        // Apply the adapter to the spinner
+        spinnerCaptureType.setAdapter(adapter);
+        // Connect the listener
+//        spinner.setOnItemSelectedListener(this);
+		
+		
 		// Specify the layout to use when the list of choices appears
-		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 		// Apply the adapter to the spinner
-		spinner.setAdapter(adapter);
 		// Connect the listener
-		spinner.setOnItemSelectedListener(this);
 		
 		// We do not connect to service updating the UI here
 		// because we do tat in onResume()
