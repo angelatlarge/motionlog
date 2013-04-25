@@ -10,18 +10,22 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.res.Resources;
+import android.content.res.TypedArray;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewGroup.LayoutParams;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
+import android.widget.SpinnerAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.hardware.SensorManager;
@@ -72,10 +76,36 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 	
 	/********************************************************************/
 	
-	public class LogSpeedAdapter extends ArrayAdapter<String>{
+	public class IconicSpinnerAdapter extends android.widget.BaseAdapter implements SpinnerAdapter {
+		private final int stringArrayResourceID;
+		private final String[] strings;
+		private final TypedArray icons;
+//		private final int textViewResourceId;
+		private final int viewRowResourceID;
+		private final Context context;
+		private final int viewRowTextResourceID; 
+		private final int viewRowIconResourceID;
+		
 
-		public LogSpeedAdapter(Context context, int textViewResourceId, String[] objects) {
-			super(context, textViewResourceId, objects);
+		public IconicSpinnerAdapter(
+				Context _context, 
+//				int _textViewResourceId, 
+				int _stringArrayResourceID,
+				int _iconArrayResourceID, 
+				int _viewRowResourceID, 
+				int _viewRowTextResourceID, 
+				int _viewRowIconResourceID
+				) {
+			super();
+			context = _context;
+//			textViewResourceId = _textViewResourceId;
+			viewRowResourceID = _viewRowResourceID;
+			stringArrayResourceID = _stringArrayResourceID;
+			Resources res = getResources();
+			strings = res.getStringArray(_stringArrayResourceID);
+			icons = res.obtainTypedArray(_iconArrayResourceID);
+			viewRowTextResourceID = _viewRowTextResourceID; 
+			viewRowIconResourceID = _viewRowIconResourceID;
 		}
 
 		@Override
@@ -90,19 +120,35 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		}	
 		
 		private View getIconicView(int position, View convertView, ViewGroup parent) {
+/*			
+			LinearLayout layout = new LinearLayout(context);
+			layout.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.FILL_PARENT,LayoutParams.WRAP_CONTENT));
+			layout
+*/			
 			// This is for the regular view
 			LayoutInflater inflater=getLayoutInflater();
-			View spinnerRow=inflater.inflate(R.layout.speedspin, parent, false);
-			TextView label=(TextView)spinnerRow.findViewById(R.id.speed_name);
-			Resources res = getResources();
-			String[] speeds = res.getStringArray(R.array.sensor_update_speeds);
-			label.setText(speeds[position]);
+			View rowView = inflater.inflate(viewRowResourceID, parent, false);
+			TextView label=(TextView)rowView.findViewById(viewRowTextResourceID);
+			label.setText(strings[position]);
+			ImageView icon=(ImageView)rowView.findViewById(viewRowIconResourceID);
+			icon.setImageDrawable(icons.getDrawable(position));
 
-			ImageView icon=(ImageView)spinnerRow.findViewById(R.id.speed_icon);
+			return rowView;
+		}
 
-			icon.setImageResource(R.drawable.ic_dialog_speed_slow);
+		@Override
+		public int getCount() {
+			return strings.length;
+		}
 
-			return spinnerRow;
+		@Override
+		public Object getItem(int pos) {
+			return strings[pos];
+		}
+
+		@Override
+		public long getItemId(int pos) {
+			return pos;
 		}
 	}
 	
@@ -116,28 +162,36 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver, filter);
 		
 		// The speed spinner
-		Spinner spinnerSpeed = (Spinner) findViewById(R.id.spinner_updatefrequency);
-		// Create an ArrayAdapter using the string array and a default spinner layout
-		//~ ArrayAdapter<CharSequence> adapter = 
-		//~		ArrayAdapter.createFromResource(this, R.array.sensor_update_speeds, android.R.layout.simple_spinner_item);
-//		ArrayAdapter<CharSequence> adapter = new LogSpeedAdapter(this, R.layout.speedspin, R.id.spinner_updatefrequency);
-		Resources res = getResources();
-		String[] speeds = res.getStringArray(R.array.sensor_update_speeds);
-		spinnerSpeed.setAdapter(new LogSpeedAdapter(this, R.layout.speedspin, speeds));
-//		spinner.setAdapter(adapter);	
-		spinnerSpeed.setOnItemSelectedListener(this);
+		{
+			Spinner spinnerSpeed = (Spinner) findViewById(R.id.spinner_updatefrequency);
+			// Create an ArrayAdapter using the string array and a default spinner layout
+			//~ ArrayAdapter<CharSequence> adapter = 
+			//~		ArrayAdapter.createFromResource(this, R.array.sensor_update_speeds, android.R.layout.simple_spinner_item);
+	//		ArrayAdapter<CharSequence> adapter = new LogSpeedAdapter(this, R.layout.speedspin, R.id.spinner_updatefrequency);
+			IconicSpinnerAdapter adapter  = new IconicSpinnerAdapter(
+					this, 
+					R.array.sensor_update_speed_strings,
+					R.array.sensor_update_speed_icons,
+					R.layout.iconicspin,
+					R.id.iconicspin_text, 
+					R.id.iconicspin_icon 
+					);
+			spinnerSpeed.setAdapter(adapter);
+			spinnerSpeed.setOnItemSelectedListener(this);
+		}
 		
-		Spinner spinnerCaptureType = (Spinner) findViewById(R.id.spinnerCaptureType);
-        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
-                R.array.capture_type, android.R.layout.simple_spinner_item);
-        // Specify the layout to use when the list of choices appears
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        // Apply the adapter to the spinner
-        spinnerCaptureType.setAdapter(adapter);
-        // Connect the listener
-//        spinner.setOnItemSelectedListener(this);
+		{
+			Spinner spinnerCaptureType = (Spinner) findViewById(R.id.spinnerCaptureType);
+	        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
+	                R.array.capture_type, android.R.layout.simple_spinner_item);
+	        // Specify the layout to use when the list of choices appears
+	        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+	        // Apply the adapter to the spinner
+	        spinnerCaptureType.setAdapter(adapter);
+	        // Connect the listener
+	//        spinner.setOnItemSelectedListener(this);
 		
-		
+		}		
 		// Specify the layout to use when the list of choices appears
 		// Apply the adapter to the spinner
 		// Connect the listener

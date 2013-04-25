@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="sensor_update_speed_icons">
+        <item>@drawable/ic_dialog_speed_slow</item>
+        <item>@drawable/ic_dialog_speed_medium</item>
+        <item>@drawable/ic_dialog_speed_fast</item>
+        <item>@drawable/ic_dialog_speed_vfast</item>
+    </array>
+</resources>

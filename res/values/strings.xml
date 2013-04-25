@@ -8,7 +8,7 @@
     <string name="button_stop">Stop</string>
     <string name="local_service_started">local_service_started</string>
     <string name="notification_running_title">Motion Log Running</string>
-    <string-array name="sensor_update_speeds">
+    <string-array name="sensor_update_speed_strings">
         <item>Normal</item>
         <item>Increased</item>
         <item>High</item>
