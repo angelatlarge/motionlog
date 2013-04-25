@@ -81,7 +81,8 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		private final String[] strings;
 		private final TypedArray icons;
 //		private final int textViewResourceId;
-		private final int viewRowResourceID;
+		private final int viewBasicRowResourceID;
+		private final int viewDroppedRowResourceID;
 		private final Context context;
 		private final int viewRowTextResourceID; 
 		private final int viewRowIconResourceID;
@@ -92,34 +93,48 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 //				int _textViewResourceId, 
 				int _stringArrayResourceID,
 				int _iconArrayResourceID, 
-				int _viewRowResourceID, 
+				int _viewBasicRowResourceID, 
+				int _viewDroppedRowResourceID, 
 				int _viewRowTextResourceID, 
 				int _viewRowIconResourceID
 				) {
 			super();
 			context = _context;
 //			textViewResourceId = _textViewResourceId;
-			viewRowResourceID = _viewRowResourceID;
+			viewBasicRowResourceID = _viewBasicRowResourceID;
+			viewDroppedRowResourceID = _viewDroppedRowResourceID;
 			stringArrayResourceID = _stringArrayResourceID;
 			Resources res = getResources();
-			strings = res.getStringArray(_stringArrayResourceID);
-			icons = res.obtainTypedArray(_iconArrayResourceID);
+			if (_stringArrayResourceID != 0) {
+				// Real resource ID
+				strings = res.getStringArray(_stringArrayResourceID);
+			} else {
+				// Null resource id
+				strings = null;
+			}
+			if (_iconArrayResourceID != 0) {
+				// Real resource ID 
+				icons = res.obtainTypedArray(_iconArrayResourceID);
+			} else {
+				// Nonexistent resource ID
+				icons = null;
+			}
 			viewRowTextResourceID = _viewRowTextResourceID; 
 			viewRowIconResourceID = _viewRowIconResourceID;
 		}
 
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
-			return getIconicView(position, convertView, parent);
+			return getIconicView(position, convertView, parent, viewBasicRowResourceID);
 		}
 		
 		@Override
 		public View getDropDownView(int position, View convertView, ViewGroup parent) {
 			// TODO Auto-generated method stub
-			return getIconicView(position, convertView, parent);
+			return getIconicView(position, convertView, parent, viewDroppedRowResourceID);
 		}	
 		
-		private View getIconicView(int position, View convertView, ViewGroup parent) {
+		private View getIconicView(int position, View convertView, ViewGroup parent, int rowResourceID) {
 /*			
 			LinearLayout layout = new LinearLayout(context);
 			layout.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.FILL_PARENT,LayoutParams.WRAP_CONTENT));
@@ -127,11 +142,25 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 */			
 			// This is for the regular view
 			LayoutInflater inflater=getLayoutInflater();
-			View rowView = inflater.inflate(viewRowResourceID, parent, false);
-			TextView label=(TextView)rowView.findViewById(viewRowTextResourceID);
-			label.setText(strings[position]);
-			ImageView icon=(ImageView)rowView.findViewById(viewRowIconResourceID);
-			icon.setImageDrawable(icons.getDrawable(position));
+			View rowView = inflater.inflate(rowResourceID, parent, false);
+			if (strings != null) {
+				// There is a string array
+				TextView label=(TextView)rowView.findViewById(viewRowTextResourceID);
+				if (label != null) {
+					// Label present
+					if (strings.length>position)	// out-of-bounds check
+						label.setText(strings[position]);
+				}
+			}
+			
+			if (icons != null) {
+				ImageView icon=(ImageView)rowView.findViewById(viewRowIconResourceID);
+				if (icon != null) {
+					// Icon present
+					if (icons.length()>position)	// out-of-bounds check
+						icon.setImageDrawable(icons.getDrawable(position));
+				}
+			}
 
 			return rowView;
 		}
@@ -172,7 +201,8 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 					this, 
 					R.array.sensor_update_speed_strings,
 					R.array.sensor_update_speed_icons,
-					R.layout.iconicspin,
+					R.layout.iconicspin_icononly,
+					R.layout.iconicspin_iconicstring,
 					R.id.iconicspin_text, 
 					R.id.iconicspin_icon 
 					);
