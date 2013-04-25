@@ -9,58 +9,12 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context=".MainActivity" >
 
-    <TextView
-        android:id="@+id/textView1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
-        android:text="Update speed:"
-        android:textAppearance="?android:attr/textAppearanceSmall" 
-        />
-
-    <Spinner
-        android:id="@+id/spinner_updatefrequency"
-        android:layout_width="69dp"
-        android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
-        android:layout_alignTop="@+id/textView1" />
-    
-    <Button
-        android:id="@+id/button_startstop"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:onClick="startStopButtonClick"
-        android:text="@string/button_start" 
-        />
-
-    <Switch
-        android:id="@+id/switch1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Log" />
-
-    <ToggleButton
-        android:id="@+id/toggleButton1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="ToggleButton" />
-
-    <CheckBox
-        android:id="@+id/checkBox1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Log" />
-
-    <CheckBox
-        android:id="@+id/checkBox2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Display" />
 
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal" >
+        android:orientation="horizontal"
+	>
         
         <TextView
             android:id="@+id/textView2"
@@ -73,11 +27,29 @@
         
         <Spinner
             android:id="@+id/spinnerCaptureType"
-            android:layout_width="85dp"
+            android:layout_width="45dp"
             android:layout_height="wrap_content" 
             android:layout_toRightOf="@id/textView2"
             />
 
+        <TextView
+            android:id="@+id/textView3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBaseline="@+id/toggleButton2"
+            android:layout_alignBottom="@+id/toggleButton2"
+            android:layout_toRightOf="@+id/spinnerCaptureType"
+            android:text="Speed:"
+            android:textAppearance="?android:attr/textAppearanceSmall" />
+
+        <Spinner
+            android:id="@+id/spinner_updatefrequency"
+            android:layout_width="45dp"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_toRightOf="@+id/textView3" 
+        />
+        
         <ToggleButton
             android:id="@+id/toggleButton2"
             android:layout_width="wrap_content"
@@ -86,6 +58,6 @@
             android:text="ToggleButton" />
 
 
-    </RelativeLayout>
+        </RelativeLayout>
     
 </LinearLayout>

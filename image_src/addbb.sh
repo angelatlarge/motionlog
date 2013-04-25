@@ -11,10 +11,10 @@ else
 	INFILENAME=$1
 	OUTFILENAME=$2
 fi
-# For high-res bounding box
-HIRESBOUNDINGBOX=`grep 'AI._Cropmarks' test.eps | awk '{out=$3; for(i=4;i<=NF;i++){out=out" "$i}; print out}'`
 # Low res bounding box
-LORESBOUNDINGBOX=`grep 'AI._Cropmarks' test.eps | awk '{for(i=3;i<=NF;i++){printf "%d ", $i}; printf "\n"}'`
+LORESBOUNDINGBOX=`grep 'AI._Cropmarks' $INFILENAME | awk '{for(i=2;i<=NF;i++){printf "%d ", $i}; printf "\n"}'`
+# For high-res bounding box
+HIRESBOUNDINGBOX=`grep 'AI._Cropmarks' $INFILENAME | awk '{out=$2; for(i=3;i<=NF;i++){out=out" "$i}; print out}'`
 #~ cat $INFILENAME.eps | sed '/%%BoundingBox/c '"%%BoundingBox: $LORESBOUNDINGBOX\n%%HiResBoundingBox: $HIRESBOUNDINGBOX" > out.eps
 cat $INFILENAME \
 	| sed \

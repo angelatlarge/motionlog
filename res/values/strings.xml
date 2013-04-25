@@ -14,7 +14,7 @@
         <item>High</item>
         <item>Very high</item>
     </string-array>
-    <string-array name="capture_type">
+    <string-array name="capturetarget_strings">
         <item>Log</item>
         <item>Display</item>
         <item>Both</item>

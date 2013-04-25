@@ -2,6 +2,7 @@ package com.atlarge.motionlog;
 
 import android.os.Bundle;
 import android.os.IBinder;
+import android.app.ActionBar;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -193,10 +194,6 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		// The speed spinner
 		{
 			Spinner spinnerSpeed = (Spinner) findViewById(R.id.spinner_updatefrequency);
-			// Create an ArrayAdapter using the string array and a default spinner layout
-			//~ ArrayAdapter<CharSequence> adapter = 
-			//~		ArrayAdapter.createFromResource(this, R.array.sensor_update_speeds, android.R.layout.simple_spinner_item);
-	//		ArrayAdapter<CharSequence> adapter = new LogSpeedAdapter(this, R.layout.speedspin, R.id.spinner_updatefrequency);
 			IconicSpinnerAdapter adapter  = new IconicSpinnerAdapter(
 					this, 
 					R.array.sensor_update_speed_strings,
@@ -207,17 +204,29 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 					R.id.iconicspin_icon 
 					);
 			spinnerSpeed.setAdapter(adapter);
-			spinnerSpeed.setOnItemSelectedListener(this);
+//			spinnerSpeed.setOnItemSelectedListener(this);
 		}
 		
 		{
 			Spinner spinnerCaptureType = (Spinner) findViewById(R.id.spinnerCaptureType);
-	        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
-	                R.array.capture_type, android.R.layout.simple_spinner_item);
+			IconicSpinnerAdapter adapter  = new IconicSpinnerAdapter(
+					this, 
+					R.array.capturetarget_strings,
+					R.array.capturetarget_icons,
+					R.layout.iconicspin_icononly,
+					R.layout.iconicspin_iconicstring,
+					R.id.iconicspin_text, 
+					R.id.iconicspin_icon 
+					);
+			spinnerCaptureType.setAdapter(adapter);
+//			
+			
+//	        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
+//	                R.array.capture_type, android.R.layout.simple_spinner_item);
 	        // Specify the layout to use when the list of choices appears
-	        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+//	        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 	        // Apply the adapter to the spinner
-	        spinnerCaptureType.setAdapter(adapter);
+//	        spinnerCaptureType.setAdapter(adapter);
 	        // Connect the listener
 	//        spinner.setOnItemSelectedListener(this);
 		
@@ -229,6 +238,10 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 		// We do not connect to service updating the UI here
 		// because we do tat in onResume()
 		Log.d("MainActivity", "onCreate");
+		
+		ActionBar actionBar = getActionBar();
+		if (actionBar != null)
+			actionBar.hide();		
 	}
 
 	@Override
@@ -368,11 +381,11 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 	}
 
 	private void updateButtonUI(boolean isLogging) {
-		Button btn = (Button)findViewById(R.id.button_startstop);
+//		Button btn = (Button)findViewById(R.id.button_startstop);
 		if (isLogging) {
-			btn.setText("Stop");			
+//			btn.setText("Stop");			
 		} else {
-			btn.setText("Start");			
+//			btn.setText("Start");			
 		}
 	}
 	
