@@ -22,6 +22,8 @@ ALL_PNGS=$(LDPI_PNGS) $(MDPI_PNGS) $(HDPI_PNGS) $(XDPI_PNGS)
 
 #~ all:	AndroidRasterImages
 
+DELETE=rm -f
+
 .PRECIOUS: $(BBX_EPSDIR)/%.eps
 
 AndroidRasterImages: $(ALL_PNGS)
@@ -30,7 +32,10 @@ $(BBX_EPSDIR):
 	mkdir -p $(BBX_EPSDIR)
 
 $(BBX_EPSDIR)/%.eps : %.eps $(BBX_EPSDIR)
-	./addbb.sh $< $@
+	cat $<								\
+	| ./addbb.sh						\
+	| ./to_white.sh						\
+	> $@
 
 $(LDPI_DIR)/%.png : $(BBX_EPSDIR)/%.eps
 	convert 								\
@@ -73,3 +78,7 @@ $(XDPI_DIR)/%.png : $(BBX_EPSDIR)/%.eps
 #~ (High density screen) 	
 #~ xhdpi (320 dpi)
 #~ (Extra-high density screen)
+
+clean:
+	$(DELETE) $(ALL_PNGS)
+	$(DELETE) $(BBX_EPSDIR)/*
