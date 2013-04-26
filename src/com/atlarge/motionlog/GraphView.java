@@ -17,12 +17,13 @@ public class GraphView extends View {
 	private String mExampleString = "Example string"; // TODO: use a default from R.string...
 	private int mExampleColor = Color.RED; // TODO: use a default from
 											// R.color...
+	private Paint mGridPaint;
 	private float mExampleDimension = 0; // TODO: use a default from R.dimen...
-//	private Drawable mExampleDrawable;
 
 	private TextPaint mTextPaint;
 	private float mTextWidth;
 	private float mTextHeight;
+	private float mGridSize = 30;
 
 	public GraphView(Context context) {
 		super(context);
@@ -68,6 +69,11 @@ public class GraphView extends View {
 		mTextPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
 		mTextPaint.setTextAlign(Paint.Align.LEFT);
 
+		mGridPaint = new Paint();
+		mGridPaint.setARGB (0xFF,0x20,0x20,0x20);
+		mGridPaint.setStyle(Paint.Style.STROKE);
+		mGridPaint.setStrokeWidth(1);
+
 		// Update TextPaint and text measurements from attributes
 		invalidateTextPaintAndMeasurements();
 	}
@@ -100,12 +106,13 @@ public class GraphView extends View {
 				+ (contentWidth - mTextWidth) / 2, paddingTop
 				+ (contentHeight + mTextHeight) / 2, mTextPaint);
 
-		// Draw the example drawable on top of the text.
-//		if (mExampleDrawable != null) {
-//			mExampleDrawable.setBounds(paddingLeft, paddingTop, paddingLeft
-//					+ contentWidth, paddingTop + contentHeight);
-//			mExampleDrawable.draw(canvas);
-//		}
+		// Draw the grid
+		for (float x=mGridSize;x<contentWidth;x+=mGridSize) {
+			canvas.drawLine(x, 0, x, contentHeight, mGridPaint);
+		}
+		for (float y=mGridSize;y<contentHeight;y+=mGridSize) {
+			canvas.drawLine(0, y, contentWidth, y, mGridPaint);
+		}
 	}
 
 	/**
@@ -171,23 +178,4 @@ public class GraphView extends View {
 		invalidateTextPaintAndMeasurements();
 	}
 
-	/**
-	 * Gets the example drawable attribute value.
-	 * 
-	 * @return The example drawable attribute value.
-	 */
-//	public Drawable getExampleDrawable() {
-//		return mExampleDrawable;
-//	}
-
-	/**
-	 * Sets the view's example drawable attribute value. In the example view,
-	 * this drawable is drawn above the text.
-	 * 
-	 * @param exampleDrawable
-	 *            The example drawable attribute value to use.
-	 */
-//	public void setExampleDrawable(Drawable exampleDrawable) {
-//		mExampleDrawable = exampleDrawable;
-//	}
 }
