@@ -1,4 +1,10 @@
+Connect everything up: graph + log
+Make grid a bitmap, probably faster that way
+Add a resource warning about 
+Consider scaling X axis appropriately
+Make three graphs
+Implement the orientation change correctly
+Disconnect app from sensors when paused
 Test app installation
-Make a new UI
 Need to implement the whole wake-lock thing from the post
 Need to look at the accelerometer lecture

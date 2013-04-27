@@ -435,9 +435,13 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 	@Override
 	public void onSensorChanged(SensorEvent event) {
 //		if (++counter%20==0) {
-			Log.d("MainActivity", String.format("onSensorChanged, value %f", event.values[0]));
-			for (int i=0; i<event.values.length; i++)
+			StringBuilder sb = new StringBuilder();
+			for (int i=0; i<event.values.length; i++) {
 				mGV.addReading(i, event.values[i], event.timestamp);
+				sb.append(event.values[i]);
+				sb.append(" ");
+			}
+			Log.d("MainActivity", String.format("onSensorChanged, values: %s", sb.toString()));
 //		}
 	}
 	

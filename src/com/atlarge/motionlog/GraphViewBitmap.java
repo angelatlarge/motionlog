@@ -105,31 +105,46 @@ public class GraphViewBitmap extends GraphViewBase {
 	public void setGraphCount(int value) {
 		super.setGraphCount(value);
 		recreateReadingStorage();
+		if (mReadingPaints[0]!=null)
+			mReadingPaints[0].setARGB(0xFF, 0xFF, 0, 0);
+		if (mReadingPaints[1]!=null)
+			mReadingPaints[1].setARGB(0xFF, 0, 0, 0xFF);
+		if (mReadingPaints[2]!=null)
+			mReadingPaints[2].setARGB(0xFF, 0, 0xFF, 0);
 	}
 	
 
 	public void addReading(int readingIndex, float readingValue, long timestamp) {
-		Log.d("GraphViewBitmap", String.format("Adding datapoint %f %d", readingValue, timestamp/1000));
+		Log.d("GraphViewBitmap", String.format("Adding datapoint index %d value %f timestamp %d", readingIndex, readingValue, timestamp/1000));
 		
 		float newReadingY = 
 				(readingValue + mMaxRange[readingIndex]) / (mMaxRange[readingIndex] * 2) * mHeight;
 		boolean haveLastReading = mLastReadingY[readingIndex] != Float.NEGATIVE_INFINITY;
 		if (haveLastReading) {
-			// Move the bitmap 
-			int OtherBmpIndex = (mDrawBmpIndex+1) % 2;
+			// Draw something
 			int nNewLineX1;
-			if (mReadingLag[readingIndex] == 0) {
+			boolean mScroll = mReadingLag[readingIndex] == 0;
+			int OtherBmpIndex = (mDrawBmpIndex+1) % 2;
+			int nDrawTargetBmpIndex;
+			if (mScroll) {
+				// Move the bitmap
 				mReadingsBitmap[OtherBmpIndex].eraseColor(Color.TRANSPARENT);
 				mReadingsCanvas[OtherBmpIndex].drawBitmap(mReadingsBitmap[mDrawBmpIndex], -SCROLL_VALUE, 0, null);
 				nNewLineX1 = mWidth - SCROLL_VALUE - 1;
+				nDrawTargetBmpIndex = OtherBmpIndex;
 			} else {
+				nDrawTargetBmpIndex = mDrawBmpIndex;
 				nNewLineX1 = mWidth - 2 - mReadingLag[readingIndex] * SCROLL_VALUE;
 			}
 			
 			// Draw the extra reading
 			Log.d("GraphView", String.format("drawing a line from %d, %f, to %d,%f", nNewLineX1, mLastReadingY[readingIndex], mWidth-1, newReadingY));  
-			mReadingsCanvas[OtherBmpIndex].drawLine(nNewLineX1, mLastReadingY[readingIndex], mWidth-1, newReadingY, mReadingPaints[readingIndex]);
-			mDrawBmpIndex = OtherBmpIndex;
+			mReadingsCanvas[nDrawTargetBmpIndex].drawLine(nNewLineX1, mLastReadingY[readingIndex], mWidth-1, newReadingY, mReadingPaints[readingIndex]);
+			
+			// Flip the bitmaps
+			if (mScroll) {
+				mDrawBmpIndex = OtherBmpIndex;
+			}
 			// Cue drawing update
 			invalidate();
 		}

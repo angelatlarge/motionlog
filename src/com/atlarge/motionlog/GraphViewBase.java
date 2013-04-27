@@ -126,6 +126,7 @@ public class GraphViewBase extends View {
 	}
 	
 	protected void generateDefaultGraphColors() {
+		Log.d("GraphViewBase", String.format("generateDefaultGraphColors()"));
 		int nIncrementValue = 0x100;
 		int nIncrementMult = 1;
 		int idxColorSet = 0;
@@ -138,6 +139,7 @@ public class GraphViewBase extends View {
 				if ((bfColorIndex & (0x01<<idxBit)) > 0) { colors[idxBit] = nUseValue; }
 			}
 			// Set the color
+			Log.d("GraphViewBase", String.format("Adding color(%d,%d,%d)", colors[0], colors[1], colors[2]));
 			mReadingPaints[idxColor].setARGB(0xFF, colors[0], colors[1], colors[2]);
 
 			// Compute the next color
