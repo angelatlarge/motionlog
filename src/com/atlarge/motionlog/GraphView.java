@@ -1,11 +1,16 @@
 package com.atlarge.motionlog;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
+
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PointF;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
@@ -17,6 +22,7 @@ import android.view.View;
  * TODO: document your custom view class.
  */
 public class GraphView extends View {
+	private int mGraphCount = 2;
 	private final int LINES_COUNT	= 2;
 	private final int SCROLL_VALUE = 10;
 	private String mExampleString = "Example string"; // TODO: use a default from R.string...
@@ -38,10 +44,36 @@ public class GraphView extends View {
 	private float[] mLastReadingY;
 	private float[] mMaxRange;
 	
+	private float mScaleX = (float) 0.00002;
+	
+	private LinkedList<Datapoint> mDatapoints;
+	private LinkedList<PointF> mDrawPoints;
+	
 	private int mWidth;
 	private int mHeight;
 	
 	private Paint mTransparentPaint;
+	
+	private class Datapoint {
+		float[] mData;
+		long mTimestamp;
+		int mPresent;
+		
+		Datapoint(int idx, float _data, long _timestamp) {
+			mData = new float[mGraphCount];
+			mData[idx] = _data;
+			mTimestamp = _timestamp;
+			mPresent = 1<<idx;
+		}
+		
+		boolean isPresent(int idx) {
+			return (mPresent & (1<<idx)) != 0;
+		}
+		
+		float get(int idx) {
+			return mData[idx];
+		}
+	}
 	
 	public GraphView(Context context) {
 		super(context);
@@ -106,7 +138,11 @@ public class GraphView extends View {
 		mReadingPaints[1].setARGB (0xFF, 0x00, 0xFF, 0x00);
 		mReadingPaints[1].setStyle(Paint.Style.FILL);
 		
+		mDatapoints = new LinkedList<Datapoint>();
+		mDrawPoints = new LinkedList<PointF>();
+		
 
+		
 		// Create reading storage
 		mLastReadingY = new float[LINES_COUNT];
 		mReadingLag = new int[LINES_COUNT]; 
@@ -176,7 +212,24 @@ public class GraphView extends View {
 		}
 		
 		// Draw the graphs
-		canvas.drawBitmap(mReadingsBitmap, 0, 0, null);
+		Iterator<Datapoint> it = mDatapoints.descendingIterator();
+		if (it.hasNext()) {
+			float x2 = mWidth - 1;
+			Datapoint dp = it.next();
+			long lastTime = dp.mTimestamp;
+			float y2 = (dp.get(0) + mMaxRange[0]) / (mMaxRange[0] * 2) * mHeight;
+			while (it.hasNext()) { 
+				dp = it.next();
+				float y1 = (dp.get(0) + mMaxRange[0]) / (mMaxRange[0] * 2) * mHeight;
+				float x1 = x2 - (lastTime - dp.mTimestamp) * mScaleX;
+				Log.d("GraphView", String.format("drawing a line from %f, %f, to %f,%f (%d)", x1, y1, x2, y2, (lastTime - dp.mTimestamp)));  
+				canvas.drawLine(x1, y1, x2, y2, mReadingPaints[0]);
+				y2=y1;
+				x2=x1;
+				lastTime = dp.mTimestamp;
+			}
+
+		}
 	}
 
 	/**
@@ -250,7 +303,17 @@ public class GraphView extends View {
 		mReadingsBitmap.eraseColor(Color.TRANSPARENT);
 	}
 	
-	public void addReading(int readingIndex, float readingValue) {
+	public void addReading(int readingIndex, float readingValue, long timestamp) {
+		// Deal with the data
+		Log.d("GraphView", String.format("Adding datapoint %f %d", readingValue, timestamp/1000));
+		mDatapoints.add(new Datapoint(readingIndex, readingValue, timestamp/1000));
+//		while ((timestamp - mDatapoints.peek().mTimestamp) * mScaleX > mWidth) {
+//			mDatapoints.removeFirst();
+//		}
+		
+		invalidate();
+		
+/*		
 		float newReadingY = 
 				(readingValue + mMaxRange[readingIndex]) / (mMaxRange[readingIndex] * 2) * mHeight;
 		boolean haveLastReading = mLastReadingY[readingIndex] != Float.NEGATIVE_INFINITY;
@@ -285,6 +348,7 @@ public class GraphView extends View {
 		} else {
 			mReadingLag[readingIndex]--;
 		}
-		
+*/		
 	}
+	
 }
