@@ -22,8 +22,8 @@ import android.view.View;
  * TODO: document your custom view class.
  */
 public class GraphViewBase extends View {
-	protected int mGraphCount = 2;
-	protected final int LINES_COUNT	= 2;
+	protected final int DEFAULT_GRAPH_COUNT	= 2;
+	protected int mGraphCount = DEFAULT_GRAPH_COUNT;
 	protected String mExampleString = "Example string"; // TODO: use a default from R.string...
 	protected int mExampleColor = Color.RED; // TODO: use a default from
 											// R.color...
@@ -40,8 +40,6 @@ public class GraphViewBase extends View {
 	
 	protected int mWidth;
 	protected int mHeight;
-	
-	protected Paint mTransparentPaint;
 	
 	
 	public GraphViewBase(Context context) {
@@ -97,23 +95,72 @@ public class GraphViewBase extends View {
 		invalidateTextPaintAndMeasurements();
 		
 		// Create the paint for the readings
-		mReadingPaints = new Paint[LINES_COUNT];
-		for (int i=0; i<LINES_COUNT; i++) {
+		recreateReadingPaints();
+
+		// Max range storage
+		recreateMaxRange();
+
+	}
+
+	protected void recreateReadingPaints() {
+		mReadingPaints = new Paint[mGraphCount];
+		for (int i=0; i<mGraphCount; i++) {
 			mReadingPaints[i] = new Paint();
 			mReadingPaints[i].setStyle(Paint.Style.STROKE);
 			mReadingPaints[i].setStrokeWidth(1);
 		}		
-		mReadingPaints[0].setARGB (0xFF, 0xFF, 0x00, 0x00);
-		mReadingPaints[1].setARGB (0xFF, 0x00, 0xFF, 0x00);
-		mReadingPaints[1].setStyle(Paint.Style.FILL);
+		generateDefaultGraphColors();
+	}
+	
+	protected void recreateMaxRange() {
+		Log.d("GraphViewBase", String.format("recreateMaxRange with %d", mGraphCount));
+		float[] newMaxRange = new float[mGraphCount];
+		if (mMaxRange != null) {
+			for (int i=0; i<mMaxRange.length; i++) {
+				if (i<mGraphCount) {
+					newMaxRange[i] = mMaxRange[i];
+				}
+			}
+		}
+		mMaxRange = newMaxRange; 
+	}
+	
+	protected void generateDefaultGraphColors() {
+		int nIncrementValue = 0x100;
+		int nIncrementMult = 1;
+		int idxColorSet = 0;
+		int bfColorIndex = 1;
+		for (int idxColor = 0; idxColor<mReadingPaints.length; idxColor++) {
+			int[] colors = {0, 0, 0};
+			int nUseValue = nIncrementValue * nIncrementMult;
+			if (nUseValue > 255) nUseValue = 255;
+			for (int idxBit = 0; idxBit<4; idxBit++) {
+				if ((bfColorIndex & (0x01<<idxBit)) > 0) { colors[idxBit] = nUseValue; }
+			}
+			// Set the color
+			mReadingPaints[idxColor].setARGB(0xFF, colors[0], colors[1], colors[2]);
 
-		// Max range storage
-		mMaxRange = new float[LINES_COUNT]; 
+			// Compute the next color
+			if ((bfColorIndex <<= 1) > 7) {
+				if ((bfColorIndex&(bfColorIndex-1)) > 0) {
+					// More than one bit is set, done with this nIncrementMult
+					if ((nIncrementMult+=2 * nIncrementValue) > 0x100) {
+						// Next nIncrementValue
+						nIncrementValue /= 2;
+						nIncrementMult = 1;
+					} // else: nothing to do, already incremented nIncrementMult
+					bfColorIndex = 1;
+				} else {
+					bfColorIndex = 3;	// Do doubles
+				}
+			
+			} //else: nothing to do, already moved on to the next color 
+		}
 
 	}
-
+	
 	protected void onSizeChanged (int w, int h, int oldw, int oldh) {
-		Log.d("GraphView", String.format("onSizeChanged(%d,%d,%d,%d", w, h, oldw, oldh));
+		Log.d("GraphViewBase", String.format("onSizeChanged(%d,%d,%d,%d", w, h, oldw, oldh));
 		mWidth = w;
 		mHeight = h;
 	}
@@ -130,7 +177,7 @@ public class GraphViewBase extends View {
 	@Override
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
-		Log.d("GraphView", "draw()");  
+		Log.d("GraphViewBase", "draw()");  
 
 		// TODO: consider storing these as member variables to reduce
 		// allocations per draw cycle.
@@ -222,6 +269,13 @@ public class GraphViewBase extends View {
 
 	public void setMaxRange(int readingIndex, float maxRange) {
 		mMaxRange[readingIndex] = maxRange;
+	}
+	
+	public void setGraphCount(int value) {
+		mGraphCount = value;
+		recreateReadingPaints();
+		recreateMaxRange();
+		clear();
 	}
 	
 	public void clear() {

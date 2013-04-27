@@ -45,25 +45,19 @@ public class GraphViewBitmap extends GraphViewBase {
 		super.init(attrs, defStyle);
 		
 		// Create reading storage
-		mLastReadingY = new float[LINES_COUNT];
-		mReadingLag = new int[LINES_COUNT]; 
-		mMaxRange = new float[LINES_COUNT]; 
-		for (int i=0; i<LINES_COUNT; i++) {
+		recreateReadingStorage();
+	}
+
+	protected void recreateReadingStorage() {
+		mLastReadingY = new float[mGraphCount];
+		mReadingLag = new int[mGraphCount]; 
+		for (int i=0; i<mGraphCount; i++) {
 			mLastReadingY[i] = Float.NEGATIVE_INFINITY;
 			mMaxRange[i] = 1;
 			mReadingLag[i] = 0;
-		}		
-		
-//		mTransparentPaint = new Paint(Paint.ANTI_ALIAS_FLAG); 
-		mTransparentPaint = new Paint();
-		mTransparentPaint.setXfermode(new PorterDuffXfermode(android.graphics.PorterDuff.Mode.CLEAR));
-//		mTransparentPaint.setXfermode(new PorterDuffXfermode(android.graphics.PorterDuff.Mode.SRC_OUT)); 
-		mTransparentPaint.setColor(Color.TRANSPARENT);
-		mTransparentPaint.setStyle(Paint.Style.FILL);
-		
-		
+		}				
 	}
-
+	
 	@Override
 	protected void onSizeChanged (int w, int h, int oldw, int oldh) {
 		super.onSizeChanged(w, h, oldw, oldh);
@@ -107,6 +101,12 @@ public class GraphViewBitmap extends GraphViewBase {
 			mReadingsBitmap[i].eraseColor(Color.TRANSPARENT);
 		}
 	}
+	
+	public void setGraphCount(int value) {
+		super.setGraphCount(value);
+		recreateReadingStorage();
+	}
+	
 
 	public void addReading(int readingIndex, float readingValue, long timestamp) {
 		Log.d("GraphViewBitmap", String.format("Adding datapoint %f %d", readingValue, timestamp/1000));
@@ -121,7 +121,6 @@ public class GraphViewBitmap extends GraphViewBase {
 			if (mReadingLag[readingIndex] == 0) {
 				mReadingsBitmap[OtherBmpIndex].eraseColor(Color.TRANSPARENT);
 				mReadingsCanvas[OtherBmpIndex].drawBitmap(mReadingsBitmap[mDrawBmpIndex], -SCROLL_VALUE, 0, null);
-//				mReadingsCanvas.drawRect(mWidth-SCROLL_VALUE - 1, 0, mWidth, mHeight, mReadingPaints[1]);//mTransparentPaint);
 				nNewLineX1 = mWidth - SCROLL_VALUE - 1;
 			} else {
 				nNewLineX1 = mWidth - 2 - mReadingLag[readingIndex] * SCROLL_VALUE;
@@ -139,7 +138,7 @@ public class GraphViewBitmap extends GraphViewBase {
 		
 		// Update the readings lag
 		if (mReadingLag[readingIndex] == 0) {
-			for (int i=0; i<LINES_COUNT; i++) {
+			for (int i=0; i<mGraphCount; i++) {
 				if (i != readingIndex)
 					mReadingLag[i]++;
 			}

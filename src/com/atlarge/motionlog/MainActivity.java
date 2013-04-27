@@ -325,7 +325,9 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 		} else {
 			mGV = (GraphViewBase)findViewById(R.id.graphView);		
 			mGV.clear();
-			mGV.setMaxRange(0, maxRange);
+			mGV.setGraphCount(3);
+			for (int i=0; i<3; i++) 
+				mGV.setMaxRange(i, maxRange);
 	        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
 		}	
 		mIsLogging = !mIsLogging;
@@ -433,8 +435,9 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 	@Override
 	public void onSensorChanged(SensorEvent event) {
 //		if (++counter%20==0) {
-			Log.d("MainActivity", String.format("onSensorChanged, value %f", event.values[0]));		
-			mGV.addReading(0, event.values[0], event.timestamp);
+			Log.d("MainActivity", String.format("onSensorChanged, value %f", event.values[0]));
+			for (int i=0; i<event.values.length; i++)
+				mGV.addReading(i, event.values[i], event.timestamp);
 //		}
 	}
 	
