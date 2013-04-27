@@ -17,8 +17,8 @@ import android.view.View;
  * TODO: document your custom view class.
  */
 public class GraphView extends View {
-	private final int LINES_COUNT	= 1;
-	private final int SCROLL_VALUE = 5;
+	private final int LINES_COUNT	= 2;
+	private final int SCROLL_VALUE = 10;
 	private String mExampleString = "Example string"; // TODO: use a default from R.string...
 	private int mExampleColor = Color.RED; // TODO: use a default from
 											// R.color...
@@ -99,10 +99,12 @@ public class GraphView extends View {
 		mReadingPaints = new Paint[LINES_COUNT];
 		for (int i=0; i<LINES_COUNT; i++) {
 			mReadingPaints[i] = new Paint();
-			mReadingPaints[i].setARGB (0xFF, 0xFF, 0x00, 0x00);
 			mReadingPaints[i].setStyle(Paint.Style.STROKE);
 			mReadingPaints[i].setStrokeWidth(1);
 		}		
+		mReadingPaints[0].setARGB (0xFF, 0xFF, 0x00, 0x00);
+		mReadingPaints[1].setARGB (0xFF, 0x00, 0xFF, 0x00);
+		mReadingPaints[1].setStyle(Paint.Style.FILL);
 		
 
 		// Create reading storage
@@ -116,9 +118,11 @@ public class GraphView extends View {
 		}		
 		
 //		mTransparentPaint = new Paint(Paint.ANTI_ALIAS_FLAG); 
-		mTransparentPaint = new Paint(); 
-		mTransparentPaint.setXfermode(new PorterDuffXfermode(android.graphics.PorterDuff.Mode.SRC_OUT)); 
+		mTransparentPaint = new Paint();
+		mTransparentPaint.setXfermode(new PorterDuffXfermode(android.graphics.PorterDuff.Mode.CLEAR));
+//		mTransparentPaint.setXfermode(new PorterDuffXfermode(android.graphics.PorterDuff.Mode.SRC_OUT)); 
 		mTransparentPaint.setColor(Color.TRANSPARENT);
+		mTransparentPaint.setStyle(Paint.Style.FILL);
 	}
 
 	protected void onSizeChanged (int w, int h, int oldw, int oldh) {
@@ -254,10 +258,11 @@ public class GraphView extends View {
 			// Move the bitmap 
 			int nNewLineX1;
 			if (mReadingLag[readingIndex] == 0) {
-				nNewLineX1 = mWidth - SCROLL_VALUE -2;
 				mReadingsCanvas.drawBitmap(mReadingsBitmap, -SCROLL_VALUE, 0, null);
 				// Erase the new line
-				mReadingsCanvas.drawRect(mWidth-SCROLL_VALUE-1, 0, mWidth, mHeight, mTransparentPaint);
+				mReadingsCanvas.drawRect(mWidth-SCROLL_VALUE - 1, 0, mWidth, mHeight, mTransparentPaint);
+//				mReadingsCanvas.drawRect(mWidth-SCROLL_VALUE - 1, 0, mWidth, mHeight, mReadingPaints[1]);//mTransparentPaint);
+				nNewLineX1 = mWidth - SCROLL_VALUE - 1;
 			} else {
 				nNewLineX1 = mWidth - 2 - mReadingLag[readingIndex] * SCROLL_VALUE;
 			}

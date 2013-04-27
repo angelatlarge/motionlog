@@ -42,6 +42,7 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 	private boolean mIsLogging = false;
 	private int mSensorUpdateSpeed = SENSORUPDATESPEED_NOSELECTION;
 	private GraphView mGV = null;
+	int counter = 0;
 	
 	/********************************************************************/
 	private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
@@ -431,8 +432,10 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 
 	@Override
 	public void onSensorChanged(SensorEvent event) {
-		Log.d("MainActivity", String.format("onSensorChanged, value %f", event.values[0]));		
-		mGV.addReading(0, event.values[0]);
+		if (++counter%20==0) {
+			Log.d("MainActivity", String.format("onSensorChanged, value %f", event.values[0]));		
+			mGV.addReading(0, event.values[0]);
+		}
 	}
 	
 
