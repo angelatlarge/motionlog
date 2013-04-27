@@ -56,7 +56,7 @@
         />
     </RelativeLayout>
 
-    <com.atlarge.motionlog.GraphView
+    <com.atlarge.motionlog.GraphViewBitmap
         android:id="@+id/graphView"
         android:layout_width="match_parent"
         android:layout_height="300dp"

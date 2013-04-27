@@ -21,76 +21,45 @@ import android.view.View;
 /**
  * TODO: document your custom view class.
  */
-public class GraphView extends View {
-	private int mGraphCount = 2;
-	private final int LINES_COUNT	= 2;
-	private final int SCROLL_VALUE = 10;
-	private String mExampleString = "Example string"; // TODO: use a default from R.string...
-	private int mExampleColor = Color.RED; // TODO: use a default from
+public class GraphViewBase extends View {
+	protected int mGraphCount = 2;
+	protected final int LINES_COUNT	= 2;
+	protected String mExampleString = "Example string"; // TODO: use a default from R.string...
+	protected int mExampleColor = Color.RED; // TODO: use a default from
 											// R.color...
-	private Paint mGridPaint;
-	private Paint[] mReadingPaints;
-	private float mExampleDimension = 0; // TODO: use a default from R.dimen...
+	protected Paint mGridPaint;
+	protected Paint[] mReadingPaints;
+	protected float mExampleDimension = 0; // TODO: use a default from R.dimen...
 
-	private TextPaint mTextPaint;
-	private float mTextWidth;
-	private float mTextHeight;
-	private float mGridSize = 30;
+	protected TextPaint mTextPaint;
+	protected float mTextWidth;
+	protected float mTextHeight;
+	protected float mGridSize = 30;
 	
-	private Canvas mReadingsCanvas = new Canvas();
-	private Bitmap mReadingsBitmap;	
-
-	private int[] mReadingLag;
-	private float[] mLastReadingY;
-	private float[] mMaxRange;
+	protected float[] mMaxRange;
 	
-	private float mScaleX = (float) 0.00002;
+	protected int mWidth;
+	protected int mHeight;
 	
-	private LinkedList<Datapoint> mDatapoints;
-	private LinkedList<PointF> mDrawPoints;
+	protected Paint mTransparentPaint;
 	
-	private int mWidth;
-	private int mHeight;
 	
-	private Paint mTransparentPaint;
-	
-	private class Datapoint {
-		float[] mData;
-		long mTimestamp;
-		int mPresent;
-		
-		Datapoint(int idx, float _data, long _timestamp) {
-			mData = new float[mGraphCount];
-			mData[idx] = _data;
-			mTimestamp = _timestamp;
-			mPresent = 1<<idx;
-		}
-		
-		boolean isPresent(int idx) {
-			return (mPresent & (1<<idx)) != 0;
-		}
-		
-		float get(int idx) {
-			return mData[idx];
-		}
-	}
-	
-	public GraphView(Context context) {
+	public GraphViewBase(Context context) {
 		super(context);
 		init(null, 0);
 	}
 
-	public GraphView(Context context, AttributeSet attrs) {
+	public GraphViewBase(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		init(attrs, 0);
 	}
 
-	public GraphView(Context context, AttributeSet attrs, int defStyle) {
+	public GraphViewBase(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
 		init(attrs, defStyle);
 	}
 
-	private void init(AttributeSet attrs, int defStyle) {
+	protected void init(AttributeSet attrs, int defStyle) {
 		// Load attributes
 		final TypedArray a = getContext().obtainStyledAttributes(attrs, R.styleable.GraphView, defStyle, 0);
 
@@ -137,41 +106,16 @@ public class GraphView extends View {
 		mReadingPaints[0].setARGB (0xFF, 0xFF, 0x00, 0x00);
 		mReadingPaints[1].setARGB (0xFF, 0x00, 0xFF, 0x00);
 		mReadingPaints[1].setStyle(Paint.Style.FILL);
-		
-		mDatapoints = new LinkedList<Datapoint>();
-		mDrawPoints = new LinkedList<PointF>();
-		
 
-		
-		// Create reading storage
-		mLastReadingY = new float[LINES_COUNT];
-		mReadingLag = new int[LINES_COUNT]; 
+		// Max range storage
 		mMaxRange = new float[LINES_COUNT]; 
-		for (int i=0; i<LINES_COUNT; i++) {
-			mLastReadingY[i] = Float.NEGATIVE_INFINITY;
-			mMaxRange[i] = 1;
-			mReadingLag[i] = 0;
-		}		
-		
-//		mTransparentPaint = new Paint(Paint.ANTI_ALIAS_FLAG); 
-		mTransparentPaint = new Paint();
-		mTransparentPaint.setXfermode(new PorterDuffXfermode(android.graphics.PorterDuff.Mode.CLEAR));
-//		mTransparentPaint.setXfermode(new PorterDuffXfermode(android.graphics.PorterDuff.Mode.SRC_OUT)); 
-		mTransparentPaint.setColor(Color.TRANSPARENT);
-		mTransparentPaint.setStyle(Paint.Style.FILL);
+
 	}
 
 	protected void onSizeChanged (int w, int h, int oldw, int oldh) {
 		Log.d("GraphView", String.format("onSizeChanged(%d,%d,%d,%d", w, h, oldw, oldh));
 		mWidth = w;
 		mHeight = h;
-		
-		// Create a bitmap for the readings
-		if (mReadingsBitmap == null) {
-			mReadingsBitmap = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
-			mReadingsBitmap.eraseColor(Color.TRANSPARENT);
-			mReadingsCanvas.setBitmap(mReadingsBitmap);
-		}
 	}
 	
 	private void invalidateTextPaintAndMeasurements() {
@@ -211,25 +155,6 @@ public class GraphView extends View {
 			canvas.drawLine(0, y, contentWidth, y, mGridPaint);
 		}
 		
-		// Draw the graphs
-		Iterator<Datapoint> it = mDatapoints.descendingIterator();
-		if (it.hasNext()) {
-			float x2 = mWidth - 1;
-			Datapoint dp = it.next();
-			long lastTime = dp.mTimestamp;
-			float y2 = (dp.get(0) + mMaxRange[0]) / (mMaxRange[0] * 2) * mHeight;
-			while (it.hasNext()) { 
-				dp = it.next();
-				float y1 = (dp.get(0) + mMaxRange[0]) / (mMaxRange[0] * 2) * mHeight;
-				float x1 = x2 - (lastTime - dp.mTimestamp) * mScaleX;
-				Log.d("GraphView", String.format("drawing a line from %f, %f, to %f,%f (%d)", x1, y1, x2, y2, (lastTime - dp.mTimestamp)));  
-				canvas.drawLine(x1, y1, x2, y2, mReadingPaints[0]);
-				y2=y1;
-				x2=x1;
-				lastTime = dp.mTimestamp;
-			}
-
-		}
 	}
 
 	/**
@@ -300,55 +225,9 @@ public class GraphView extends View {
 	}
 	
 	public void clear() {
-		mReadingsBitmap.eraseColor(Color.TRANSPARENT);
 	}
 	
 	public void addReading(int readingIndex, float readingValue, long timestamp) {
-		// Deal with the data
-		Log.d("GraphView", String.format("Adding datapoint %f %d", readingValue, timestamp/1000));
-		mDatapoints.add(new Datapoint(readingIndex, readingValue, timestamp/1000));
-//		while ((timestamp - mDatapoints.peek().mTimestamp) * mScaleX > mWidth) {
-//			mDatapoints.removeFirst();
-//		}
-		
-		invalidate();
-		
-/*		
-		float newReadingY = 
-				(readingValue + mMaxRange[readingIndex]) / (mMaxRange[readingIndex] * 2) * mHeight;
-		boolean haveLastReading = mLastReadingY[readingIndex] != Float.NEGATIVE_INFINITY;
-		if (haveLastReading) {
-			// Move the bitmap 
-			int nNewLineX1;
-			if (mReadingLag[readingIndex] == 0) {
-				mReadingsCanvas.drawBitmap(mReadingsBitmap, -SCROLL_VALUE, 0, null);
-				// Erase the new line
-				mReadingsCanvas.drawRect(mWidth-SCROLL_VALUE - 1, 0, mWidth, mHeight, mTransparentPaint);
-//				mReadingsCanvas.drawRect(mWidth-SCROLL_VALUE - 1, 0, mWidth, mHeight, mReadingPaints[1]);//mTransparentPaint);
-				nNewLineX1 = mWidth - SCROLL_VALUE - 1;
-			} else {
-				nNewLineX1 = mWidth - 2 - mReadingLag[readingIndex] * SCROLL_VALUE;
-			}
-			
-			// Draw the extra reading
-			Log.d("GraphView", String.format("drawing a line from %d, %f, to %d,%f", nNewLineX1, mLastReadingY[readingIndex], mWidth-1, newReadingY));  
-			mReadingsCanvas.drawLine(nNewLineX1, mLastReadingY[readingIndex], mWidth-1, newReadingY, mReadingPaints[readingIndex]);
-			// Cue drawing update
-			invalidate();
-		}
-
-		mLastReadingY[readingIndex] = newReadingY;
-		
-		// Update the readings lag
-		if (mReadingLag[readingIndex] == 0) {
-			for (int i=0; i<LINES_COUNT; i++) {
-				if (i != readingIndex)
-					mReadingLag[i]++;
-			}
-		} else {
-			mReadingLag[readingIndex]--;
-		}
-*/		
 	}
 	
 }

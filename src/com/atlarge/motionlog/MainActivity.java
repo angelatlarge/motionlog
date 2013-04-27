@@ -41,7 +41,7 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
     private AccelerometerLoggerService mService;
 	private boolean mIsLogging = false;
 	private int mSensorUpdateSpeed = SENSORUPDATESPEED_NOSELECTION;
-	private GraphView mGV = null;
+	private GraphViewBase mGV = null;
 	int counter = 0;
 	
 	/********************************************************************/
@@ -323,7 +323,7 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 		if (mIsLogging) {
 			mSensorManager.unregisterListener(this);
 		} else {
-			mGV = (GraphView)findViewById(R.id.graphView);		
+			mGV = (GraphViewBase)findViewById(R.id.graphView);		
 			mGV.clear();
 			mGV.setMaxRange(0, maxRange);
 	        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
