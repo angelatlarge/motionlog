@@ -25,7 +25,7 @@ public class GraphViewBase extends View {
 											// R.color...
 	protected Paint mGridPaint;
 	protected Paint mCenterPaint;
-	protected Paint[] mReadingPaints;
+	protected Paint[] mGraphPaints;
 	protected float mExampleDimension = 0; // TODO: use a default from R.dimen...
 
 	protected TextPaint mTextPaint;
@@ -104,11 +104,11 @@ public class GraphViewBase extends View {
 	}
 
 	protected void recreateReadingPaints() {
-		mReadingPaints = new Paint[mGraphCount];
+		mGraphPaints = new Paint[mGraphCount];
 		for (int i=0; i<mGraphCount; i++) {
-			mReadingPaints[i] = new Paint();
-			mReadingPaints[i].setStyle(Paint.Style.STROKE);
-			mReadingPaints[i].setStrokeWidth(1);
+			mGraphPaints[i] = new Paint();
+			mGraphPaints[i].setStyle(Paint.Style.STROKE);
+			mGraphPaints[i].setStrokeWidth(1);
 		}		
 		generateDefaultGraphColors();
 	}
@@ -128,38 +128,10 @@ public class GraphViewBase extends View {
 	
 	protected void generateDefaultGraphColors() {
 		Log.d("GraphViewBase", String.format("generateDefaultGraphColors()"));
-		int nIncrementValue = 0x100;
-		int nIncrementMult = 1;
-		int idxColorSet = 0;
-		int bfColorIndex = 1;
-		for (int idxColor = 0; idxColor<mReadingPaints.length; idxColor++) {
-			int[] colors = {0, 0, 0};
-			int nUseValue = nIncrementValue * nIncrementMult;
-			if (nUseValue > 255) nUseValue = 255;
-			for (int idxBit = 0; idxBit<4; idxBit++) {
-				if ((bfColorIndex & (0x01<<idxBit)) > 0) { colors[idxBit] = nUseValue; }
-			}
-			// Set the color
-			Log.d("GraphViewBase", String.format("Adding color(%d,%d,%d)", colors[0], colors[1], colors[2]));
-			mReadingPaints[idxColor].setARGB(0xFF, colors[0], colors[1], colors[2]);
-
-			// Compute the next color
-			if ((bfColorIndex <<= 1) > 7) {
-				if ((bfColorIndex&(bfColorIndex-1)) > 0) {
-					// More than one bit is set, done with this nIncrementMult
-					if ((nIncrementMult+=2 * nIncrementValue) > 0x100) {
-						// Next nIncrementValue
-						nIncrementValue /= 2;
-						nIncrementMult = 1;
-					} // else: nothing to do, already incremented nIncrementMult
-					bfColorIndex = 1;
-				} else {
-					bfColorIndex = 3;	// Do doubles
-				}
-			
-			} //else: nothing to do, already moved on to the next color 
-		}
-
+		DefaultColorIterator dci = new DefaultColorIterator();
+		for (int idxColor = 0; idxColor<mGraphPaints.length; idxColor++) {
+			mGraphPaints[idxColor].setColor(dci.getNext());
+		}			
 	}
 	
 	protected void onSizeChanged (int w, int h, int oldw, int oldh) {
@@ -282,6 +254,14 @@ public class GraphViewBase extends View {
 		recreateReadingPaints();
 		recreateMaxRange();
 		clear();
+	}
+	
+	public void setGraphColor(int idx, int a, int r, int g, int b) {
+		mGraphPaints[idx].setARGB(a, r, g, b);
+	}
+	
+	public void setGraphColor(int idx, int color) {
+		mGraphPaints[idx].setColor(color);
 	}
 	
 	public void clear() {

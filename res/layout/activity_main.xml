@@ -1,5 +1,6 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/top_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -12,7 +13,10 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal" >
+        android:gravity="top"
+        android:orientation="horizontal" 
+        android:id="@+id/toolbar"
+    >
 
         <TextView
             android:id="@+id/textView2"
@@ -56,11 +60,5 @@
         />
     </RelativeLayout>
 
-    <com.atlarge.motionlog.GraphViewBitmap
-        android:id="@+id/graphView"
-        android:layout_width="match_parent"
-        android:layout_height="300dp"
-        android:layout_weight="0.48" 	
-    />
 
 </LinearLayout>

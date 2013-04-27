@@ -13,7 +13,9 @@ import android.content.ServiceConnection;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.support.v4.content.LocalBroadcastManager;
+import android.text.Layout;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
@@ -23,6 +25,7 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
@@ -37,11 +40,12 @@ import android.hardware.SensorManager;
 
 @SuppressWarnings("unused")
 public class MainActivity extends Activity  implements OnItemSelectedListener, SensorEventListener  {
+	private boolean mSingleGraph = false;
 	private static final int SENSORUPDATESPEED_NOSELECTION = -1;
     private AccelerometerLoggerService mService;
 	private boolean mIsLogging = false;
 	private int mSensorUpdateSpeed = SENSORUPDATESPEED_NOSELECTION;
-	private GraphViewBase mGV = null;
+	private GraphViewBase[] mGVs = null;
 	int counter = 0;
 	
 	/********************************************************************/
@@ -246,9 +250,42 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 		
 		ActionBar actionBar = getActionBar();
 		if (actionBar != null)
-			actionBar.hide();		
+			actionBar.hide();	
+		
+		// Create the GraphicViews
+		createGraphViews();
+		
+        /*
+    <com.atlarge.motionlog.GraphViewBitmap
+        android:id="@+id/graphView"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:layout_weight="0.48" 	
+    />
+
+        */
+        
 	}
 
+	private void createGraphViews() {
+		View toolbar = findViewById(R.id.toolbar);
+		LinearLayout layout  = (LinearLayout)toolbar.getParent();
+		if (mSingleGraph) {
+			mGVs = new GraphViewBitmap[1];
+		} else {
+			mGVs = new GraphViewBitmap[3];
+		}
+		for (int i=0;i<mGVs.length; i++) {
+			mGVs[i] = new GraphViewBitmap(this); 
+			LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, mSingleGraph?300:100, (float)0.48);
+			lp.gravity = Gravity.BOTTOM;
+			mGVs[i].setLayoutParams(lp);
+			mGVs[i].setBackgroundColor(0xFF000000);
+			layout.addView(mGVs[i], i+1);
+		}
+			
+	}
+	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
@@ -323,11 +360,21 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 		if (mIsLogging) {
 			mSensorManager.unregisterListener(this);
 		} else {
-			mGV = (GraphViewBase)findViewById(R.id.graphView);		
-			mGV.clear();
-			mGV.setGraphCount(3);
-			for (int i=0; i<3; i++) 
-				mGV.setMaxRange(i, maxRange);
+//			mGV = (GraphViewBase)findViewById(R.id.graphView);		
+			if (mSingleGraph) {
+				mGVs[0].clear();
+				mGVs[0].setGraphCount(3);
+				for (int i=0; i<3; i++) 
+					mGVs[0].setMaxRange(i, maxRange);
+			} else {
+				DefaultColorIterator dci = new DefaultColorIterator();
+				for (int i=0; i<3; i++) { 
+					mGVs[i].clear();
+					mGVs[i].setGraphCount(1);
+					mGVs[i].setMaxRange(0, maxRange);
+					mGVs[i].setGraphColor(0, dci.getNext());
+				}
+			}
 	        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
 		}	
 		mIsLogging = !mIsLogging;
@@ -435,9 +482,15 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 	@Override
 	public void onSensorChanged(SensorEvent event) {
 //		if (++counter%20==0) {
+			if (mSingleGraph)
+				for (int i=0; i<event.values.length; i++) 
+					mGVs[0].addReading(i, event.values[i], event.timestamp);
+			else
+				for (int i=0; i<event.values.length; i++) 
+					mGVs[i].addReading(0, event.values[i], event.timestamp);
+			
 			StringBuilder sb = new StringBuilder();
-			for (int i=0; i<event.values.length; i++) {
-				mGV.addReading(i, event.values[i], event.timestamp);
+			for (int i=0; i<event.values.length; i++) { 
 				sb.append(event.values[i]);
 				sb.append(" ");
 			}

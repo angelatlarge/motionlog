@@ -1,28 +1,18 @@
 package com.atlarge.motionlog;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 
 import android.content.Context;
-import android.content.res.TypedArray;
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.PointF;
-import android.graphics.PorterDuffXfermode;
-import android.graphics.drawable.Drawable;
-import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.View;
 
 public class GraphViewLine extends GraphViewBase {
 	protected float mScaleX = (float) 0.00002;
 	
 	private LinkedList<Datapoint> mDatapoints;
-    private LinkedList<PointF> mDrawPoints;
 	
 	protected class Datapoint {
 		float[] mData;
@@ -64,7 +54,6 @@ public class GraphViewLine extends GraphViewBase {
 		super.init(attrs, defStyle);
 		
 		mDatapoints = new LinkedList<Datapoint>();
-		mDrawPoints = new LinkedList<PointF>();
 		
 	}
 
@@ -86,7 +75,7 @@ public class GraphViewLine extends GraphViewBase {
 				float y1 = (dp.get(0) + mMaxRange[0]) / (mMaxRange[0] * 2) * mHeight;
 				float x1 = x2 - (lastTime - dp.mTimestamp) * mScaleX;
 				Log.d("GraphViewLine", String.format("drawing a line from %f, %f, to %f,%f (%d)", x1, y1, x2, y2, (lastTime - dp.mTimestamp)));  
-				canvas.drawLine(x1, y1, x2, y2, mReadingPaints[0]);
+				canvas.drawLine(x1, y1, x2, y2, mGraphPaints[0]);
 				y2=y1;
 				x2=x1;
 				lastTime = dp.mTimestamp;

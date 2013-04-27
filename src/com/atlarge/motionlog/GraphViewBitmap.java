@@ -76,26 +76,14 @@ public class GraphViewBitmap extends GraphViewBase {
 		}
 	}
 	
-
 	@Override
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
 		Log.d("GraphViewBitmap", "draw()");  
 
 		canvas.drawBitmap(mReadingsBitmap[mDrawBmpIndex], 0, 0, null);
-		// Draw the graphs
-		//* TODO: Write this
 	}
 
-	/**
-	 * Gets the example string attribute value.
-	 * 
-	 * @return The example string attribute value.
-	 */
-	public String getExampleString() {
-		return mExampleString;
-	}
-	
 	public void clear() {
 		for (int i=0; i<2;i++) {
 			mReadingsBitmap[i].eraseColor(Color.TRANSPARENT);
@@ -105,15 +93,8 @@ public class GraphViewBitmap extends GraphViewBase {
 	public void setGraphCount(int value) {
 		super.setGraphCount(value);
 		recreateReadingStorage();
-		if (mReadingPaints[0]!=null)
-			mReadingPaints[0].setARGB(0xFF, 0xFF, 0, 0);
-		if (mReadingPaints[1]!=null)
-			mReadingPaints[1].setARGB(0xFF, 0, 0, 0xFF);
-		if (mReadingPaints[2]!=null)
-			mReadingPaints[2].setARGB(0xFF, 0, 0xFF, 0);
 	}
 	
-
 	public void addReading(int readingIndex, float readingValue, long timestamp) {
 		Log.d("GraphViewBitmap", String.format("Adding datapoint index %d value %f timestamp %d", readingIndex, readingValue, timestamp/1000));
 		
@@ -139,7 +120,7 @@ public class GraphViewBitmap extends GraphViewBase {
 			
 			// Draw the extra reading
 			Log.d("GraphView", String.format("drawing a line from %d, %f, to %d,%f", nNewLineX1, mLastReadingY[readingIndex], mWidth-1, newReadingY));  
-			mReadingsCanvas[nDrawTargetBmpIndex].drawLine(nNewLineX1, mLastReadingY[readingIndex], mWidth-1, newReadingY, mReadingPaints[readingIndex]);
+			mReadingsCanvas[nDrawTargetBmpIndex].drawLine(nNewLineX1, mLastReadingY[readingIndex], mWidth-1, newReadingY, mGraphPaints[readingIndex]);
 			
 			// Flip the bitmaps
 			if (mScroll) {
@@ -161,5 +142,6 @@ public class GraphViewBitmap extends GraphViewBase {
 			mReadingLag[readingIndex]--;
 		}
 	}
+	
 	
 }
