@@ -68,7 +68,7 @@ public class GraphViewLine extends GraphViewBase {
 		
 	}
 
-
+	
 	@Override
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);

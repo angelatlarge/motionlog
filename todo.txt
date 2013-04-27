@@ -1,3 +1,4 @@
+Axis labels
 Connect everything up: graph + log
 Make grid a bitmap, probably faster that way
 Add a resource warning about 

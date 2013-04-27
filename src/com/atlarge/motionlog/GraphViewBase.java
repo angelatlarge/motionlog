@@ -1,9 +1,5 @@
 package com.atlarge.motionlog;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
-
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
@@ -28,6 +24,7 @@ public class GraphViewBase extends View {
 	protected int mExampleColor = Color.RED; // TODO: use a default from
 											// R.color...
 	protected Paint mGridPaint;
+	protected Paint mCenterPaint;
 	protected Paint[] mReadingPaints;
 	protected float mExampleDimension = 0; // TODO: use a default from R.dimen...
 
@@ -90,7 +87,11 @@ public class GraphViewBase extends View {
 		mGridPaint.setARGB (0xFF,0x20,0x20,0x20);
 		mGridPaint.setStyle(Paint.Style.STROKE);
 		mGridPaint.setStrokeWidth(1);
-
+		
+		mCenterPaint = new Paint();
+		mCenterPaint.setARGB (0xFF,0x80,0x80,0x80);
+		mCenterPaint.setStyle(Paint.Style.STROKE);
+		mCenterPaint.setStrokeWidth(1);
 		// Update TextPaint and text measurements from attributes
 		invalidateTextPaintAndMeasurements();
 		
@@ -176,33 +177,36 @@ public class GraphViewBase extends View {
 		mTextHeight = fontMetrics.bottom;
 	}
 
+	protected void drawGrid(Canvas canvas) {
+		// Draw the grid
+		
+		// Vertical lines
+		for (float x=mGridSize;x<mWidth;x+=mGridSize) {
+			canvas.drawLine(x, 0, x, mHeight, mGridPaint);
+		}
+		
+		// Center line
+		float nCenter = mHeight/2;
+		
+		// Horizontal lines
+		canvas.drawLine(0, nCenter, mWidth, nCenter, mCenterPaint);
+		
+		float[] y = {nCenter-mGridSize, nCenter+mGridSize};
+		while (y[0]>0) {
+			canvas.drawLine(0, y[0], mWidth, y[0], mGridPaint);
+			canvas.drawLine(0, y[1], mWidth, y[1], mGridPaint);
+			y[0] -= mGridSize;
+			y[1] += mGridSize;
+		}
+		
+	}
+	
 	@Override
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
 		Log.d("GraphViewBase", "draw()");  
 
-		// TODO: consider storing these as member variables to reduce
-		// allocations per draw cycle.
-		int paddingLeft = getPaddingLeft();
-		int paddingTop = getPaddingTop();
-		int paddingRight = getPaddingRight();
-		int paddingBottom = getPaddingBottom();
-
-		int contentWidth = getWidth() - paddingLeft - paddingRight;
-		int contentHeight = getHeight() - paddingTop - paddingBottom;
-
-		// Draw the text.
-		canvas.drawText(mExampleString, paddingLeft
-				+ (contentWidth - mTextWidth) / 2, paddingTop
-				+ (contentHeight + mTextHeight) / 2, mTextPaint);
-
-		// Draw the grid
-		for (float x=mGridSize;x<contentWidth;x+=mGridSize) {
-			canvas.drawLine(x, 0, x, contentHeight, mGridPaint);
-		}
-		for (float y=mGridSize;y<contentHeight;y+=mGridSize) {
-			canvas.drawLine(0, y, contentWidth, y, mGridPaint);
-		}
+		drawGrid(canvas);
 		
 	}
 
