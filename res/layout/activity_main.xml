@@ -51,11 +51,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentRight="true"
-            android:text="ToggleButton" />
+        	android:onClick="startStopButtonClick"
+            android:text="ToggleButton" 
+        />
     </RelativeLayout>
 
     <com.atlarge.motionlog.GraphView
-        android:id="@+id/graphView1"
+        android:id="@+id/graphView"
         android:layout_width="match_parent"
         android:layout_height="300dp"
         android:layout_weight="0.48" 	

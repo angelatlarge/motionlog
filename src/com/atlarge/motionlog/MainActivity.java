@@ -29,15 +29,19 @@ import android.widget.Spinner;
 import android.widget.SpinnerAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 
 
 @SuppressWarnings("unused")
-public class MainActivity extends Activity  implements OnItemSelectedListener {
+public class MainActivity extends Activity  implements OnItemSelectedListener, SensorEventListener  {
 	private static final int SENSORUPDATESPEED_NOSELECTION = -1;
     private AccelerometerLoggerService mService;
 	private boolean mIsLogging = false;
 	private int mSensorUpdateSpeed = SENSORUPDATESPEED_NOSELECTION;
+	private GraphView mGV = null;
 	
 	/********************************************************************/
 	private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
@@ -287,8 +291,6 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 	
 	
 	private void connectToService() {
-		Log.d("MainActivity", "Starting the service");
-		
 		Intent startIntent = new Intent(this, AccelerometerLoggerService.class);
 		startIntent.putExtra(AccelerometerLoggerService.INTENTEXTRA_COMMAND, AccelerometerLoggerService.INTENTCOMMAND_RETURNSTATUS);
 		ComponentName startResult = startService(startIntent);
@@ -312,11 +314,27 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 	
 	public void startStopButtonClick(View view) {
 		Log.d("MainActivity", "startStopButton clicked");
+		
+        SensorManager mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+        Sensor mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        float maxRange = mAccelerometer.getMaximumRange();
+        Log.d("MainActivity", String.format("Accelerometer maximum range: %f", maxRange));        
+		if (mIsLogging) {
+			mSensorManager.unregisterListener(this);
+		} else {
+			mGV = (GraphView)findViewById(R.id.graphView);		
+			mGV.clear();
+			mGV.setMaxRange(0, maxRange);
+	        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+		}	
+		mIsLogging = !mIsLogging;
+/*		
 		if (!mIsLogging) {
 			startLogging();
 		} else {
 			stopLogging();
 		}
+*/		
 	}
 	
 	private void startLogging() {
@@ -382,11 +400,11 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 
 	private void updateButtonUI(boolean isLogging) {
 //		Button btn = (Button)findViewById(R.id.button_startstop);
-		if (isLogging) {
+//		if (isLogging) {
 //			btn.setText("Stop");			
-		} else {
+//		} else {
 //			btn.setText("Start");			
-		}
+//		}
 	}
 	
 	private void updateDelayUI(int sensorRate) {
@@ -403,6 +421,18 @@ public class MainActivity extends Activity  implements OnItemSelectedListener {
 	@Override
 	protected void onNewIntent (Intent intent) {
 		super.onNewIntent(intent);
+	}
+
+	@Override
+	public void onAccuracyChanged(Sensor sensor, int accuracy) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onSensorChanged(SensorEvent event) {
+		Log.d("MainActivity", String.format("onSensorChanged, value %f", event.values[0]));		
+		mGV.addReading(0, event.values[0]);
 	}
 	
 
