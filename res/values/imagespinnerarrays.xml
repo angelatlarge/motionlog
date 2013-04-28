@@ -6,9 +6,23 @@
         <item>@drawable/ic_dialog_speed_fast</item>
         <item>@drawable/ic_dialog_speed_vfast</item>
     </array>
+    <integer-array name="sensor_update_speed_string_ids">
+        <item>@string/menu_SENSORDELAY_NORMAL</item>
+        <item>@string/menu_SENSORDELAY_UI</item>
+        <item>@string/menu_SENSORDELAY_GAME</item>
+        <item>@string/menu_SENSORDELAY_FASTEST</item>
+    </integer-array>
+	
     <array name="capturetarget_icons">
         <item>@drawable/ic_dialog_target_graph</item>
         <item>@drawable/ic_dialog_target_file</item>
         <item>@drawable/ic_dialog_target_both</item>
     </array>
+
+    <integer-array name="capturetarget_string_ids">
+        <item>@string/menu_CAPTURETARGET_GRAPH</item>
+        <item>@string/menu_CAPTURETARGET_FILE</item>
+        <item>@string/menu_CAPTURETARGET_BOTH</item>
+    </integer-array>
+	
 </resources>

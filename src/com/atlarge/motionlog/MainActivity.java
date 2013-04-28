@@ -53,6 +53,8 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 	private static final boolean LOGCONFIRMATIONPROMPT_DEFAULT = true;
 	private boolean mLogConfirmationPrompt = LOGCONFIRMATIONPROMPT_DEFAULT;
 	int counter = 0;
+	IconicSpinnerAdapter mSpeedSpinnerAdapter;
+	IconicSpinnerAdapter mLogTargetSpinnerAdapter;
 	
 	/********************************************************************/
 	private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
@@ -104,7 +106,7 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 	
 	public class IconicSpinnerAdapter extends android.widget.BaseAdapter implements SpinnerAdapter {
 		private final int stringArrayResourceID;
-		private final String[] strings;
+		private final TypedArray stringIds;
 		private final TypedArray icons;
 //		private final int textViewResourceId;
 		private final int viewBasicRowResourceID;
@@ -133,10 +135,10 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 			Resources res = getResources();
 			if (_stringArrayResourceID != 0) {
 				// Real resource ID
-				strings = res.getStringArray(_stringArrayResourceID);
+				stringIds = res.obtainTypedArray(_stringArrayResourceID);
 			} else {
 				// Null resource id
-				strings = null;
+				stringIds = null;
 			}
 			if (_iconArrayResourceID != 0) {
 				// Real resource ID 
@@ -160,17 +162,21 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 			return getIconicView(position, convertView, parent, viewDroppedRowResourceID);
 		}	
 		
-		private View getIconicView(int position, View convertView, ViewGroup parent, int rowResourceID) {
+		private String getPositionalString(int pos) {
+			return getString(stringIds.getResourceId(pos, 0));
+		}
+		
+		private View getIconicView(int pos, View convertView, ViewGroup parent, int rowResourceID) {
 			// This is for the regular view
 			LayoutInflater inflater=getLayoutInflater();
 			View rowView = inflater.inflate(rowResourceID, parent, false);
-			if (strings != null) {
+			if (stringIds != null) {
 				// There is a string array
 				TextView label=(TextView)rowView.findViewById(viewRowTextResourceID);
 				if (label != null) {
 					// Label present
-					if (strings.length>position)	// out-of-bounds check
-						label.setText(strings[position]);
+					if (stringIds.length()>pos)	// out-of-bounds check
+						label.setText(getPositionalString(pos));
 				}
 			}
 			
@@ -178,8 +184,8 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 				ImageView icon=(ImageView)rowView.findViewById(viewRowIconResourceID);
 				if (icon != null) {
 					// Icon present
-					if (icons.length()>position)	// out-of-bounds check
-						icon.setImageDrawable(icons.getDrawable(position));
+					if (icons.length()>pos)	// out-of-bounds check
+						icon.setImageDrawable(icons.getDrawable(pos));
 				}
 			}
 
@@ -188,12 +194,12 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 
 		@Override
 		public int getCount() {
-			return strings.length;
+			return stringIds.length();
 		}
 
 		@Override
 		public Object getItem(int pos) {
-			return strings[pos];
+			return getPositionalString(pos);
 		}
 
 		@Override
@@ -213,45 +219,32 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 		LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver, filter);
 		
 		// The speed spinner
-		{
-			Spinner spinnerSpeed = (Spinner) findViewById(R.id.spinner_updatefrequency);
-			IconicSpinnerAdapter adapter  = new IconicSpinnerAdapter(
-					this, 
-					R.array.sensor_update_speed_strings,
-					R.array.sensor_update_speed_icons,
-					R.layout.iconicspin_icononly,
-					R.layout.iconicspin_iconicstring,
-					R.id.iconicspin_text, 
-					R.id.iconicspin_icon 
-					);
-			spinnerSpeed.setAdapter(adapter);
-//			spinnerSpeed.setOnItemSelectedListener(this);
-		}
+		Spinner spinnerSpeed = (Spinner) findViewById(R.id.spinner_updatefrequency);
+		mSpeedSpinnerAdapter  = new IconicSpinnerAdapter(
+				this, 
+				R.array.sensor_update_speed_string_ids,
+				R.array.sensor_update_speed_icons,
+				R.layout.iconicspin_icononly,
+				R.layout.iconicspin_iconicstring,
+				R.id.iconicspin_text, 
+				R.id.iconicspin_icon 
+				);
+		spinnerSpeed.setAdapter(mSpeedSpinnerAdapter);
+		spinnerSpeed.setOnItemSelectedListener(this);
 		
-		{
-			Spinner spinnerCaptureType = (Spinner) findViewById(R.id.spinnerCaptureType);
-			IconicSpinnerAdapter adapter  = new IconicSpinnerAdapter(
-					this, 
-					R.array.capturetarget_strings,
-					R.array.capturetarget_icons,
-					R.layout.iconicspin_icononly,
-					R.layout.iconicspin_iconicstring,
-					R.id.iconicspin_text, 
-					R.id.iconicspin_icon 
-					);
-			spinnerCaptureType.setAdapter(adapter);
-//			
-			
-//	        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
-//	                R.array.capture_type, android.R.layout.simple_spinner_item);
-	        // Specify the layout to use when the list of choices appears
-//	        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-	        // Apply the adapter to the spinner
-//	        spinnerCaptureType.setAdapter(adapter);
-	        // Connect the listener
-	//        spinner.setOnItemSelectedListener(this);
-		
-		}		
+		Spinner spinnerCaptureType = (Spinner) findViewById(R.id.spinnerCaptureType);
+		IconicSpinnerAdapter mLogTargetSpinnerAdapter  = new IconicSpinnerAdapter(
+				this, 
+				R.array.capturetarget_string_ids,
+				R.array.capturetarget_icons,
+				R.layout.iconicspin_icononly,
+				R.layout.iconicspin_iconicstring,
+				R.id.iconicspin_text, 
+				R.id.iconicspin_icon 
+				);
+		spinnerCaptureType.setAdapter(mLogTargetSpinnerAdapter);
+		spinnerCaptureType.setOnItemSelectedListener(this);
+
 		// Specify the layout to use when the list of choices appears
 		// Apply the adapter to the spinner
 		// Connect the listener
@@ -490,8 +483,14 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 	public void onItemSelected(AdapterView<?> parent, View view,  int pos, long id) {
 		// An item was selected. You can retrieve the selected item using
         // parent.getItemAtPosition(pos)
-		Log.v("MainActivity", String.format("New mSensorUpdateSpeed: %d\n", pos));
-		mSensorUpdateSpeed = pos;
+		if (view.getId() == R.id.spinner_updatefrequency) {
+			Log.v("MainActivity", String.format("New mSensorUpdateSpeed: %d\n", pos));
+			mSensorUpdateSpeed = pos;
+		} else if (view.getId() == R.id.spinnerCaptureType) {
+			// TODO: Implement this
+		} else {
+			Log.e("MainActivity", "Unknown source of on item selected"); 
+		}
 	}
 
 	@Override

@@ -13,17 +13,13 @@
     <string name="donotaskagain">Do not ask again</string>
     <string name="saved_logconfirmationprompt">atlarge.motionlog.logconfirmprompt</string>
     <string name="log_confirmation_message">Saving to accelerometer data to log file is a battery-intensive operation. Your battery may get drained very quickly.</string>
-    <string-array name="sensor_update_speed_strings">
-        <item>Normal speed</item>
-        <item>Increased speed</item>
-        <item>High speed</item>
-        <item>Very high speed</item>
-    </string-array>
-    <string-array name="capturetarget_strings">
-        <item>Capture as graph</item>
-        <item>Capture to file</item>
-        <item>Capture both</item>
-    </string-array>
+	<string name="menu_SENSORDELAY_NORMAL">Normal speed</string>
+	<string name="menu_SENSORDELAY_UI">Increased speed</string>
+	<string name="menu_SENSORDELAY_GAME">High speed</string>
+	<string name="menu_SENSORDELAY_FASTEST">Very high speed</string>
+	<string name="menu_CAPTURETARGET_GRAPH">Capture as graph</string>
+	<string name="menu_CAPTURETARGET_FILE">Capture as file</string>
+	<string name="menu_CAPTURETARGET_BOTH">Capture both</string>
     <string-array name="sensor_axis_names">
         <item>X axis</item>
         <item>Y axis</item>
