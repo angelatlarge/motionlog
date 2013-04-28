@@ -410,6 +410,12 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 		ToggleButton btn = (ToggleButton)findViewById(R.id.button_startstop);
 		btn.setChecked(false);
 	}
+
+	@Override
+	public void onDialogCancel(DialogFragment dialog) {
+		ToggleButton btn = (ToggleButton)findViewById(R.id.button_startstop);
+		btn.setChecked(false);
+	}
 	
 	private void startLogging() {
 		// Clear the graph views
@@ -532,5 +538,6 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 		Log.d("MainActivity", String.format("onSensorChanged, values: %s", sb.toString()));
 		processNewSensorValues(event.values, event.timestamp); 
 	}
+
 
 }

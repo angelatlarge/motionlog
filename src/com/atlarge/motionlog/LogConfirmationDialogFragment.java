@@ -14,6 +14,7 @@ public class LogConfirmationDialogFragment extends DialogFragment {
     public interface DialogListener {
         public void onDialogPositiveClick(DialogFragment dialog);
         public void onDialogNegativeClick(DialogFragment dialog);
+        public void onDialogCancel(DialogFragment dialog);
     }
 	
     // Use this instance of the interface to deliver action events
@@ -51,5 +52,10 @@ public class LogConfirmationDialogFragment extends DialogFragment {
                });
         // Create the AlertDialog object and return it
         return builder.create();
+    }
+    
+    @Override
+    public void onCancel (DialogInterface dialog) {
+    	mListener.onDialogCancel(LogConfirmationDialogFragment.this);
     }
 }
