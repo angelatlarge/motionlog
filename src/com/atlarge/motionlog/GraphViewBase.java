@@ -19,7 +19,7 @@ import android.view.View;
  */
 public class GraphViewBase extends View {
 	protected final int DEFAULT_GRAPH_COUNT	= 2;
-	protected final float DEFAULT_GRID = 30;
+	protected final float DEFAULT_GRID = 25;
 	protected int mGraphCount = DEFAULT_GRAPH_COUNT;
 	protected String mExampleString = "Example string"; // TODO: use a default from R.string...
 	protected int mExampleColor = Color.RED; // TODO: use a default from
@@ -84,9 +84,10 @@ public class GraphViewBase extends View {
 
 		// Set up a default TextPaint object
 		mGridLabelPaint = new TextPaint();
+		mGridLabelPaint.setColor(0xFFFFFFFF);
 		mGridLabelPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
 		mGridLabelPaint.setTextAlign(Paint.Align.LEFT);
-		mGridLabelPaint.setTextSize(24);
+		mGridLabelPaint.setTextSize(12);
 
 		mGridPaint = new Paint();
 		mGridPaint.setARGB (0xFF,0x20,0x20,0x20);
@@ -194,23 +195,32 @@ public class GraphViewBase extends View {
 		
 		// Center line
 		float nCenter = mHeight/2;
-		
-		// Horizontal lines
 		canvas.drawLine(0, nCenter, mWidth, nCenter, mCenterPaint);
 		
+		// Horizontal lines
 		float[] y = {nCenter-mGridScreenWidth, nCenter+mGridScreenWidth};
-		while (y[0]>0) {
+		while (y[0]>0) {		// Positive y is down
 			canvas.drawLine(0, y[0], mWidth, y[0], mGridPaint);
 			canvas.drawLine(0, y[1], mWidth, y[1], mGridPaint);
 			y[0] -= mGridScreenWidth;
-			y[1] += mGridScreenWidth;
+			y[1] += mGridScreenWidth;		
 		}
 		
+		// Horizontal labels
+		y[0] = nCenter-mGridScreenWidth; y[1] = nCenter+mGridScreenWidth;  
+		float logicalLabel = 0;
+		logicalLabel += mGridLogicalSize;
+		while (y[0]>0) {		// Positive y is down
+			// Draw the tick labels
+			StringBuilder sb = new StringBuilder('+' + Float.toString(logicalLabel));
+			canvas.drawText(sb.toString(), 0, y[0], mGridLabelPaint);
+			sb.setCharAt(0, '-');
+			canvas.drawText(sb.toString(), 0, y[1], mGridLabelPaint);
+			y[0] -= mGridScreenWidth*2;
+			y[1] += mGridScreenWidth*2;		
+		}
 		// Draw grid labels
 /*		
-		canvas.drawText(mExampleString, paddingLeft
-                                + (contentWidth - mTextWidth) / 2, paddingTop
-                                + (contentHeight + mTextHeight) / 2, mTextPaint);
 */	
 	}
 	
