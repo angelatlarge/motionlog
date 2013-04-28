@@ -281,18 +281,30 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 	private void createGraphViews() {
 		View toolbar = findViewById(R.id.toolbar);
 		LinearLayout layout  = (LinearLayout)toolbar.getParent();
+		String[] axisNames = null;
 		if (mSingleGraph) {
 			mGVs = new GraphViewBitmap[1];
 		} else {
 			mGVs = new GraphViewBitmap[3];
+			axisNames = getResources().getStringArray(R.array.sensor_axis_names);
 		}
+		int layoutIndex = 1;
+		
+		
 		for (int i=0;i<mGVs.length; i++) {
 			mGVs[i] = new GraphViewBitmap(this); 
 			LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, mSingleGraph?300:100, (float)0.48);
 			lp.gravity = Gravity.BOTTOM;
 			mGVs[i].setLayoutParams(lp);
 			mGVs[i].setBackgroundColor(0xFF000000);
-			layout.addView(mGVs[i], i+1);
+			if (!mSingleGraph) {
+				TextView tv = new TextView(this);
+				tv.setTextSize(12);
+				tv.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+				tv.setText(axisNames[i]);
+				layout.addView(tv, layoutIndex++);
+			}
+			layout.addView(mGVs[i], layoutIndex++);
 		}
 			
 	}

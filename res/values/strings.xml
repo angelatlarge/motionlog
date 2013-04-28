@@ -19,4 +19,9 @@
         <item>Capture to file</item>
         <item>Capture both</item>
     </string-array>
+    <string-array name="sensor_axis_names">
+        <item>X axis</item>
+        <item>Y axis</item>
+        <item>Z axis</item>
+    </string-array>
 </resources>
