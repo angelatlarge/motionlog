@@ -4,8 +4,15 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.FrameLayout;
+//import android.widget.FrameLayout.LayoutParams;
+import android.view.ViewGroup.LayoutParams;
 
 public class LogConfirmationDialogFragment extends DialogFragment {
     /* The activity that creates an instance of this dialog fragment must
@@ -37,7 +44,8 @@ public class LogConfirmationDialogFragment extends DialogFragment {
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         // Use the Builder class for convenient dialog construction
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+		Activity activity = getActivity();
+        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
         builder.setMessage(R.string.log_confirmation_message)
                .setPositiveButton(R.string.proceed, new DialogInterface.OnClickListener() {
                    public void onClick(DialogInterface dialog, int id) {
@@ -50,7 +58,14 @@ public class LogConfirmationDialogFragment extends DialogFragment {
                 	   mListener.onDialogNegativeClick(LogConfirmationDialogFragment.this);
                    }
                });
-        // Create the AlertDialog object and return it
+        
+        // Create the checkbox and add it
+        Context context = activity.getApplicationContext();
+        LayoutInflater inflater = (LayoutInflater) context.getSystemService( Context.LAYOUT_INFLATER_SERVICE );
+        View checkboxLayout = inflater.inflate(R.layout.log_confirmation_extra, null);
+        builder.setView(checkboxLayout);
+        
+        // Create the AlertDialog object
         return builder.create();
     }
     

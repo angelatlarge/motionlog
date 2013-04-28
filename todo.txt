@@ -1,4 +1,3 @@
-Make the back button work correctly with the confirmation dialog
 Make the confirmation dialog only pop-up when logging to file
 Add a checkbox to the confirmation dialog
 Add border around the graph views?

@@ -158,11 +158,6 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 		}	
 		
 		private View getIconicView(int position, View convertView, ViewGroup parent, int rowResourceID) {
-/*			
-			LinearLayout layout = new LinearLayout(context);
-			layout.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.FILL_PARENT,LayoutParams.WRAP_CONTENT));
-			layout
-*/			
 			// This is for the regular view
 			LayoutInflater inflater=getLayoutInflater();
 			View rowView = inflater.inflate(rowResourceID, parent, false);
