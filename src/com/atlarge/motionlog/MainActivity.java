@@ -396,18 +396,18 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 	}
 	
 	@Override
-	public void onDialogPositiveClick(DialogFragment dialog) {
+	public void onDialogPositiveClick(DialogFragment dialog, boolean doNotAskAgain) {
 		startLogging();
 	}
 
 	@Override
-	public void onDialogNegativeClick(DialogFragment dialog) {
+	public void onDialogNegativeClick(DialogFragment dialog, boolean doNotAskAgain) {
 		ToggleButton btn = (ToggleButton)findViewById(R.id.button_startstop);
 		btn.setChecked(false);
 	}
 
 	@Override
-	public void onDialogCancel(DialogFragment dialog) {
+	public void onDialogCancel(DialogFragment dialog, boolean doNotAskAgain) {
 		ToggleButton btn = (ToggleButton)findViewById(R.id.button_startstop);
 		btn.setChecked(false);
 	}

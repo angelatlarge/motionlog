@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.FrameLayout;
 //import android.widget.FrameLayout.LayoutParams;
 import android.view.ViewGroup.LayoutParams;
@@ -19,13 +20,14 @@ public class LogConfirmationDialogFragment extends DialogFragment {
      * implement this interface in order to receive event callbacks.
      * Each method passes the DialogFragment in case the host needs to query it. */
     public interface DialogListener {
-        public void onDialogPositiveClick(DialogFragment dialog);
-        public void onDialogNegativeClick(DialogFragment dialog);
-        public void onDialogCancel(DialogFragment dialog);
+        public void onDialogPositiveClick(DialogFragment dialog, boolean doNotAskAgain);
+        public void onDialogNegativeClick(DialogFragment dialog, boolean doNotAskAgain);
+        public void onDialogCancel(DialogFragment dialog, boolean doNotAskAgain);
     }
 	
     // Use this instance of the interface to deliver action events
     DialogListener mListener;
+    View checkboxLayout;
     
     // Override the Fragment.onAttach() method to instantiate the NoticeDialogListener
     @Override
@@ -46,24 +48,29 @@ public class LogConfirmationDialogFragment extends DialogFragment {
         // Use the Builder class for convenient dialog construction
 		Activity activity = getActivity();
         AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+        
+        // Create the checkbox and add it
+        Context context = activity.getApplicationContext();
+        LayoutInflater inflater = (LayoutInflater) context.getSystemService( Context.LAYOUT_INFLATER_SERVICE );
+        checkboxLayout = inflater.inflate(R.layout.log_confirmation_extra, null);
+        builder.setView(checkboxLayout);
+        
+        // Add regular IO
         builder.setMessage(R.string.log_confirmation_message)
                .setPositiveButton(R.string.proceed, new DialogInterface.OnClickListener() {
                    public void onClick(DialogInterface dialog, int id) {
-                	   mListener.onDialogPositiveClick(LogConfirmationDialogFragment.this);
+                	   CheckBox checkbox = (CheckBox)checkboxLayout.findViewById(R.id.checkbox_donotaskagain);
+                	   mListener.onDialogPositiveClick(LogConfirmationDialogFragment.this, checkbox.isChecked());
                    }
                })
                .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
                    public void onClick(DialogInterface dialog, int id) {
                        // User cancelled the dialog
-                	   mListener.onDialogNegativeClick(LogConfirmationDialogFragment.this);
+                	   CheckBox checkbox = (CheckBox)checkboxLayout.findViewById(R.id.checkbox_donotaskagain);
+                	   mListener.onDialogNegativeClick(LogConfirmationDialogFragment.this, checkbox.isChecked());
                    }
                });
         
-        // Create the checkbox and add it
-        Context context = activity.getApplicationContext();
-        LayoutInflater inflater = (LayoutInflater) context.getSystemService( Context.LAYOUT_INFLATER_SERVICE );
-        View checkboxLayout = inflater.inflate(R.layout.log_confirmation_extra, null);
-        builder.setView(checkboxLayout);
         
         // Create the AlertDialog object
         return builder.create();
@@ -71,6 +78,7 @@ public class LogConfirmationDialogFragment extends DialogFragment {
     
     @Override
     public void onCancel (DialogInterface dialog) {
-    	mListener.onDialogCancel(LogConfirmationDialogFragment.this);
+    	CheckBox checkbox = (CheckBox)checkboxLayout.findViewById(R.id.checkbox_donotaskagain);
+    	mListener.onDialogCancel(LogConfirmationDialogFragment.this, checkbox.isChecked());
     }
 }
