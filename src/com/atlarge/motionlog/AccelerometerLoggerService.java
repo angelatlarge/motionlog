@@ -34,17 +34,30 @@ import android.widget.Toast;
 
 @SuppressWarnings("unused")
 public class AccelerometerLoggerService extends Service implements SensorEventListener {
+	public static final int LOGTYPE_FILE = 1;
+	public static final int LOGTYPE_GRAPH = 2;
+	public static final int LOGTYPE_BOTH = 3;
+	
 	public static final String ACTION_STATUS_LOGGING = "com.atlarge.motionlog.status.logging";
 	public static final String ACTION_STATUS_NOTLOGGING = "com.atlarge.motionlog.status.notlogging";
+	public static final String ACTION_SENSORCHANGED = "com.atlarge.motionlog.sensorchanged";
 	public static final String APPLICATION_DIR = "com.atlarge.motionlog";
 	public static final String INTENTEXTRA_COMMAND = "com.atlarge.servicecommand";
 	public static final int INTENTCOMMAND_RETURNSTATUS	= 0x01;
 	public static final int INTENTCOMMAND_STARTLOGGING	= 0x02;
 	public static final int INTENTCOMMAND_STOPLOGGING	= 0x03;
 	public static final String INTENTEXTRA_UPDATERATE = "com.atlarge.updaterate";
+	public static final String INTENTEXTRA_LOGGINGTYPE = "com.atlarge.loggingtype";
+	public static final String INTENTEXTRA_SENSORVALUES = "com.atlarge.sensorvalues";
+	public static final String INTENTEXTRA_SENSORTIMESTAMP = "com.atlarge.sensortimestamp";
+//	public static final String INTENTEXTRA_SENSOREVENT = "com.atlarge.sensorevent";
 	public static final String INTENTEXTRA_STATUS_FORCENOTIFYFLAG = "com.atlarge.status.forcenotifyflag";
-	private static final int NOTIFICATIONID_INPROGRESS = 001;
 	public static final int DEFAULT_SENSOR_RATE = SensorManager.SENSOR_DELAY_NORMAL;
+	public static final int DEFAULT_LOGTYPE = LOGTYPE_GRAPH;
+	
+	private static final int NOTIFICATIONID_INPROGRESS = 001;
+	private static final int HANDLERTHREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_DEFAULT;
+	
 	private Looper mServiceLooper;
 	private ServiceHandler mServiceHandler;
 	private boolean logging = false;
@@ -52,6 +65,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	private FileOutputStream logOutputStream;
 	private PrintWriter logWriter;
 	private int mSensorRate = DEFAULT_SENSOR_RATE;
+	private int mLoggingType = DEFAULT_LOGTYPE;
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
 	
@@ -91,8 +105,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 		// separate thread because the service normally runs in the process's
 		// main thread, which we don't want to block.  We also make it
 		// background priority so CPU-intensive work will not disrupt our UI.
-		HandlerThread thread = new HandlerThread("ServiceStartArguments",
-				android.os.Process.THREAD_PRIORITY_BACKGROUND);
+		HandlerThread thread = new HandlerThread("ServiceStartArguments", HANDLERTHREAD_PRIORITY);
 		thread.start();
 
 		// Get the HandlerThread's Looper and use it for our Handler 
@@ -121,6 +134,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 				Log.d("AccelerometerLoggerService", String.format("Old sensor rate: %d, ", mSensorRate));
                 mSensorRate = extras.getInt(INTENTEXTRA_UPDATERATE, DEFAULT_SENSOR_RATE);
 				Log.d("AccelerometerLoggerService", String.format("new sensor rate: %d\n", mSensorRate));
+				mLoggingType = extras.getInt(INTENTEXTRA_LOGGINGTYPE, DEFAULT_LOGTYPE);
 				startLogging();
 				break;
 			case INTENTCOMMAND_STOPLOGGING:
@@ -154,37 +168,40 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
     private boolean startLogging() {
 		Log.d("AccelerometerLoggerService", "startLogging()");
 				
-	    String state = Environment.getExternalStorageState();
-	    if (!Environment.MEDIA_MOUNTED.equals(state)) {
-			Toast.makeText(this, "External storage unavailable: can't start log", Toast.LENGTH_SHORT).show();
-	        stopSelf();
-	        return false;
-	    } // else: we know the external storage is available
-	    
-        // Create a directory
-	    File logDir = new File(Environment.getExternalStorageDirectory(), APPLICATION_DIR);
-	    if (!logDir.exists()) {
-	        if (!logDir.mkdirs()) {
-	        	// Trouble creating directory
-				Toast.makeText(this, "Cannot create app directory", Toast.LENGTH_SHORT).show();
+		if ((mLoggingType & LOGTYPE_FILE) > 0) {
+			// Logging to file as well
+		    String state = Environment.getExternalStorageState();
+		    if (!Environment.MEDIA_MOUNTED.equals(state)) {
+				Toast.makeText(this, "External storage unavailable: can't start log", Toast.LENGTH_SHORT).show();
+		        stopSelf();
 		        return false;
-	        }
-	    }
+		    } // else: we know the external storage is available
+		    
+	        // Create a directory
+		    File logDir = new File(Environment.getExternalStorageDirectory(), APPLICATION_DIR);
+		    if (!logDir.exists()) {
+		        if (!logDir.mkdirs()) {
+		        	// Trouble creating directory
+					Toast.makeText(this, "Cannot create app directory", Toast.LENGTH_SHORT).show();
+			        return false;
+		        }
+		    }
 
-	    // Create a file
-	    SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd_HH-mm-ss", Locale.US);
-	    Date now = new Date();
-	    String logFN = formatter.format(now) + ".txt";
-        logFile = new File(logDir.getAbsolutePath(), logFN);
-        try {
-        	logOutputStream = new FileOutputStream(logFile);
-	        logWriter = new PrintWriter(logOutputStream);
-	        logWriter.println("Time (ns)\tX-axis\tY-axis\tZ-axis");
-        } catch (Exception e) {
-            e.printStackTrace();
-			return false;
-        }    
-        
+		    // Create a file
+		    SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd_HH-mm-ss", Locale.US);
+		    Date now = new Date();
+		    String logFN = formatter.format(now) + ".txt";
+	        logFile = new File(logDir.getAbsolutePath(), logFN);
+	        try {
+	        	logOutputStream = new FileOutputStream(logFile);
+		        logWriter = new PrintWriter(logOutputStream);
+		        logWriter.println("Time (ns)\tX-axis\tY-axis\tZ-axis");
+	        } catch (Exception e) {
+	            e.printStackTrace();
+				return false;
+	        }    
+		} // Logging to file
+		
 		// Here we know logging is going to start
 		logging = true;
 		
@@ -236,10 +253,22 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	public void onSensorChanged(SensorEvent event) {
 		Log.v("AccelerometerLoggerService", "onSensorChanged");
         try {
-        	logWriter.print(event.timestamp);
-        	for (int i=0;i<event.values.length;i++)
-        		logWriter.format("\t%f", event.values[i]);
-        	logWriter.println();
+    		if ((mLoggingType & LOGTYPE_FILE) > 0) {
+    			Log.v("AccelerometerLoggerService", "saving to file");
+	        	logWriter.print(event.timestamp);
+	        	for (int i=0;i<event.values.length;i++)
+	        		logWriter.format("\t%f", event.values[i]);
+	        	logWriter.println();
+    		}
+    		if ((mLoggingType & LOGTYPE_GRAPH) > 0) {
+        		// Notify the parent window
+    			Log.v("AccelerometerLoggerService", "notifying parent");
+        		Intent intent = new Intent();
+        		intent.setAction(ACTION_SENSORCHANGED);
+        		intent.putExtra(INTENTEXTRA_SENSORVALUES, event.values);
+        		intent.putExtra(INTENTEXTRA_SENSORTIMESTAMP, event.timestamp);
+        		LocalBroadcastManager.getInstance(this).sendBroadcast(intent);        		
+        	}
         } catch (Exception e) {
             e.printStackTrace();
         }    

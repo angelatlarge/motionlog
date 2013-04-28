@@ -7,8 +7,8 @@
         <item>@drawable/ic_dialog_speed_vfast</item>
     </array>
     <array name="capturetarget_icons">
-        <item>@drawable/ic_dialog_target_file</item>
         <item>@drawable/ic_dialog_target_graph</item>
+        <item>@drawable/ic_dialog_target_file</item>
         <item>@drawable/ic_dialog_target_both</item>
     </array>
 </resources>

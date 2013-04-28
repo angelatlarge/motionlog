@@ -53,6 +53,7 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 	  	@Override
 	  	public void onReceive(Context context, Intent intent) {
 	  		// Get extra data included in the Intent
+			Log.d("MainActivity", "onReceive");		
 			Bundle extras = intent.getExtras();
 			// Get the notification flag
 			boolean forceNotifyFlag = false;
@@ -61,10 +62,10 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 			}
 			// Process the intent action
 	  		if (intent.getAction().equals(AccelerometerLoggerService.ACTION_STATUS_LOGGING)) {
+				Log.d("MainActivity", "onReceive: ACTION_STATUS_LOGGING");		
 	  			updateButtonUI(true);
 				int sensorRate = AccelerometerLoggerService.DEFAULT_SENSOR_RATE;
 				if(extras != null) {
-					Log.d("MainActivity", "updateUIFromIntent: found extras");		
 					sensorRate = extras.getInt(AccelerometerLoggerService.INTENTEXTRA_UPDATERATE, AccelerometerLoggerService.DEFAULT_SENSOR_RATE);
 				}
 				updateDelayUI(sensorRate);
@@ -72,12 +73,21 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 				if (forceNotifyFlag)
 					Toast.makeText(MainActivity.this, "Logging started", Toast.LENGTH_SHORT).show();	 	    	
 	  		} else if (intent.getAction().equals(AccelerometerLoggerService.ACTION_STATUS_NOTLOGGING)) {
+				Log.d("MainActivity", "onReceive: ACTION_STATUS_NOTLOGGING");		
 	  			updateButtonUI(false);
 		  		mIsLogging = false;
 				if (forceNotifyFlag)
 					Toast.makeText(MainActivity.this, "Logging stopped", Toast.LENGTH_SHORT).show();	 	    	
+	  		} else if (intent.getAction().equals(AccelerometerLoggerService.ACTION_SENSORCHANGED)) {
+				Log.d("MainActivity", "onReceive: ACTION_SENSORCHANGED");		
+				if(extras != null) {
+					float[] values = extras.getFloatArray(AccelerometerLoggerService.INTENTEXTRA_SENSORVALUES);
+					long timestamp = extras.getLong(AccelerometerLoggerService.INTENTEXTRA_SENSORTIMESTAMP, 0);
+					processNewSensorValues(values, timestamp);
+				}	  			
 	  		} else {
 	  			// Captured unknown intent
+				Log.d("MainActivity", "onReceive: unknown action");		
 	  		}
 //	  		String message = intent.getStringExtra("message");
 //	  		Log.d("receiver", "Got message: " + message);
@@ -198,6 +208,7 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 		IntentFilter filter = new IntentFilter();
 		filter.addAction(AccelerometerLoggerService.ACTION_STATUS_LOGGING);
 		filter.addAction(AccelerometerLoggerService.ACTION_STATUS_NOTLOGGING);
+		filter.addAction(AccelerometerLoggerService.ACTION_SENSORCHANGED);
 		LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver, filter);
 		
 		// The speed spinner
@@ -375,16 +386,15 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 					mGVs[i].setGraphColor(0, dci.getNext());
 				}
 			}
-	        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+//	        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
 		}	
-		mIsLogging = !mIsLogging;
-/*		
+//		mIsLogging = !mIsLogging;
+		
 		if (!mIsLogging) {
 			startLogging();
 		} else {
 			stopLogging();
-		}
-*/		
+		}		
 	}
 	
 	private void startLogging() {
@@ -479,23 +489,27 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 		
 	}
 
+	
+	private void processNewSensorValues(float[] values, long timestamp) {
+		if (mSingleGraph) {
+			for (int i=0; i<values.length; i++) 
+				mGVs[0].addReading(i, values[i], timestamp);
+		} else {
+			for (int i=0; i<values.length; i++) 
+				mGVs[i].addReading(0, values[i], timestamp);
+		}
+		
+	}
+	
 	@Override
 	public void onSensorChanged(SensorEvent event) {
-//		if (++counter%20==0) {
-			if (mSingleGraph)
-				for (int i=0; i<event.values.length; i++) 
-					mGVs[0].addReading(i, event.values[i], event.timestamp);
-			else
-				for (int i=0; i<event.values.length; i++) 
-					mGVs[i].addReading(0, event.values[i], event.timestamp);
-			
-			StringBuilder sb = new StringBuilder();
-			for (int i=0; i<event.values.length; i++) { 
-				sb.append(event.values[i]);
-				sb.append(" ");
-			}
-			Log.d("MainActivity", String.format("onSensorChanged, values: %s", sb.toString()));
-//		}
+		StringBuilder sb = new StringBuilder();
+		for (int i=0; i<event.values.length; i++) { 
+			sb.append(event.values[i]);
+			sb.append(" ");
+		}
+		Log.d("MainActivity", String.format("onSensorChanged, values: %s", sb.toString()));
+		processNewSensorValues(event.values, event.timestamp); 
 	}
 	
 
