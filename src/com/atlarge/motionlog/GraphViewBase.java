@@ -19,6 +19,7 @@ import android.view.View;
  */
 public class GraphViewBase extends View {
 	protected final int DEFAULT_GRAPH_COUNT	= 2;
+	protected final float DEFAULT_GRID = 30;
 	protected int mGraphCount = DEFAULT_GRAPH_COUNT;
 	protected String mExampleString = "Example string"; // TODO: use a default from R.string...
 	protected int mExampleColor = Color.RED; // TODO: use a default from
@@ -31,10 +32,11 @@ public class GraphViewBase extends View {
 	protected Canvas mGridCanvas;
 	protected Bitmap mGridBitmap;
 	
-	protected TextPaint mTextPaint;
+	protected TextPaint mGridLabelPaint;
 	protected float mTextWidth;
 	protected float mTextHeight;
-	protected float mGridSize = 30;
+	protected float mGridScreenWidth;
+	protected float mGridLogicalSize;
 	
 	protected float[] mMaxRange;
 	
@@ -61,18 +63,17 @@ public class GraphViewBase extends View {
 		// Load attributes
 		final TypedArray a = getContext().obtainStyledAttributes(attrs, R.styleable.GraphView, defStyle, 0);
 
-		mExampleString = a.getString(R.styleable.GraphView_exampleString);
-		if (mExampleString==null)
-			mExampleString = "Test string";
-		mExampleColor = a.getColor(R.styleable.GraphView_exampleColor,
-				mExampleColor);
+		//~ mExampleString = a.getString(R.styleable.GraphView_exampleString);
+		//~ if (mExampleString==null)
+			//~ mExampleString = "Test string";
+		//~ mExampleColor = a.getColor(R.styleable.GraphView_exampleColor,
+				//~ mExampleColor);
 //		if (mExampleColor==null)
 //			mExampleColor = Color.BLACK;
 		// Use getDimensionPixelSize or getDimensionPixelOffset when dealing
 		// with
 		// values that should fall on pixel boundaries.
-		mExampleDimension = a.getDimension(
-				R.styleable.GraphView_exampleDimension, mExampleDimension);
+		//~ mExampleDimension = a.getDimension(R.styleable.GraphView_exampleDimension, mExampleDimension);
 
 //		if (a.hasValue(R.styleable.GraphView_exampleDrawable)) {
 //			mExampleDrawable = a.getDrawable(R.styleable.GraphView_exampleDrawable);
@@ -82,9 +83,10 @@ public class GraphViewBase extends View {
 		a.recycle();
 
 		// Set up a default TextPaint object
-		mTextPaint = new TextPaint();
-		mTextPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
-		mTextPaint.setTextAlign(Paint.Align.LEFT);
+		mGridLabelPaint = new TextPaint();
+		mGridLabelPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
+		mGridLabelPaint.setTextAlign(Paint.Align.LEFT);
+		mGridLabelPaint.setTextSize(24);
 
 		mGridPaint = new Paint();
 		mGridPaint.setARGB (0xFF,0x20,0x20,0x20);
@@ -96,7 +98,7 @@ public class GraphViewBase extends View {
 		mCenterPaint.setStyle(Paint.Style.STROKE);
 		mCenterPaint.setStrokeWidth(1);
 		// Update TextPaint and text measurements from attributes
-		invalidateTextPaintAndMeasurements();
+		//~ invalidateTextPaintAndMeasurements();
 		
 		// Create the paint for the readings
 		recreateReadingPaints();
@@ -106,6 +108,15 @@ public class GraphViewBase extends View {
 
 	}
 
+/*	
+	private void invalidateTextPaintAndMeasurements() {
+		mTextPaint.setColor(mExampleColor);
+		mTextWidth = mTextPaint.measureText(mExampleString);
+
+		Paint.FontMetrics fontMetrics = mTextPaint.getFontMetrics();
+		mTextHeight = fontMetrics.bottom;
+	}
+*/	
 	protected void recreateReadingPaints() {
 		mGraphPaints = new Paint[mGraphCount];
 		for (int i=0; i<mGraphCount; i++) {
@@ -120,9 +131,11 @@ public class GraphViewBase extends View {
 		Log.d("GraphViewBase", String.format("recreateMaxRange with %d", mGraphCount));
 		float[] newMaxRange = new float[mGraphCount];
 		if (mMaxRange != null) {
-			for (int i=0; i<mMaxRange.length; i++) {
-				if (i<mGraphCount) {
+			for (int i=0; i<mGraphCount; i++) {
+				if (i<mMaxRange.length) {
 					newMaxRange[i] = mMaxRange[i];
+				} else {
+					newMaxRange[i] = 1;
 				}
 			}
 		}
@@ -143,28 +156,39 @@ public class GraphViewBase extends View {
 		mHeight = h;
 		
 		mGridBitmap = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
-		mGridBitmap.eraseColor(Color.TRANSPARENT);
 		mGridCanvas = new Canvas();
 		mGridCanvas.setBitmap(mGridBitmap);
-		
-		drawGrid(mGridCanvas);
+
+		recreateGrid();
 		
 	}
 	
-	private void invalidateTextPaintAndMeasurements() {
-		mTextPaint.setTextSize(mExampleDimension);
-		mTextPaint.setColor(mExampleColor);
-		mTextWidth = mTextPaint.measureText(mExampleString);
+	protected void recreateGrid() {
+		if (mGridCanvas==null) return;
+		mGridBitmap.eraseColor(Color.TRANSPARENT);
+		
+		GraphTickMarks gtm = new GraphTickMarks(-mMaxRange[0], mMaxRange[0], (int)(mHeight/DEFAULT_GRID));
+		mGridLogicalSize = gtm.tickSpacing();
+		mGridScreenWidth = mHeight/(gtm.graphMax() - gtm.graphMin()) * mGridLogicalSize;
 
-		Paint.FontMetrics fontMetrics = mTextPaint.getFontMetrics();
-		mTextHeight = fontMetrics.bottom;
+		Log.d("GraphViewBase", String.format("recreateGrid: mGridLogicalSize %f, mGridScreenWidth %f, max-min: %f/%f ", mGridLogicalSize, mGridScreenWidth, gtm.graphMax(), gtm.graphMin())); 
+		
+		/*
+			0-1
+			2-5
+			5-10
+		float fGridSizeStart = mMaxRange[0]
+		
+		mGridLogicalSize
+		*/
+		drawGrid(mGridCanvas);
 	}
-
+	
 	protected void drawGrid(Canvas canvas) {
 		// Draw the grid
 		
 		// Vertical lines
-		for (float x=mGridSize;x<mWidth;x+=mGridSize) {
+		for (float x=mGridScreenWidth;x<mWidth;x+=mGridScreenWidth) {
 			canvas.drawLine(x, 0, x, mHeight, mGridPaint);
 		}
 		
@@ -174,14 +198,20 @@ public class GraphViewBase extends View {
 		// Horizontal lines
 		canvas.drawLine(0, nCenter, mWidth, nCenter, mCenterPaint);
 		
-		float[] y = {nCenter-mGridSize, nCenter+mGridSize};
+		float[] y = {nCenter-mGridScreenWidth, nCenter+mGridScreenWidth};
 		while (y[0]>0) {
 			canvas.drawLine(0, y[0], mWidth, y[0], mGridPaint);
 			canvas.drawLine(0, y[1], mWidth, y[1], mGridPaint);
-			y[0] -= mGridSize;
-			y[1] += mGridSize;
+			y[0] -= mGridScreenWidth;
+			y[1] += mGridScreenWidth;
 		}
 		
+		// Draw grid labels
+/*		
+		canvas.drawText(mExampleString, paddingLeft
+                                + (contentWidth - mTextWidth) / 2, paddingTop
+                                + (contentHeight + mTextHeight) / 2, mTextPaint);
+*/	
 	}
 	
 	@Override
@@ -203,59 +233,6 @@ public class GraphViewBase extends View {
 		return mExampleString;
 	}
 
-	/**
-	 * Sets the view's example string attribute value. In the example view, this
-	 * string is the text to draw.
-	 * 
-	 * @param exampleString
-	 *            The example string attribute value to use.
-	 */
-	public void setExampleString(String exampleString) {
-		mExampleString = exampleString;
-		invalidateTextPaintAndMeasurements();
-	}
-
-	/**
-	 * Gets the example color attribute value.
-	 * 
-	 * @return The example color attribute value.
-	 */
-	public int getExampleColor() {
-		return mExampleColor;
-	}
-
-	/**
-	 * Sets the view's example color attribute value. In the example view, this
-	 * color is the font color.
-	 * 
-	 * @param exampleColor
-	 *            The example color attribute value to use.
-	 */
-	public void setExampleColor(int exampleColor) {
-		mExampleColor = exampleColor;
-		invalidateTextPaintAndMeasurements();
-	}
-
-	/**
-	 * Gets the example dimension attribute value.
-	 * 
-	 * @return The example dimension attribute value.
-	 */
-	public float getExampleDimension() {
-		return mExampleDimension;
-	}
-
-	/**
-	 * Sets the view's example dimension attribute value. In the example view,
-	 * this dimension is the font size.
-	 * 
-	 * @param exampleDimension
-	 *            The example dimension attribute value to use.
-	 */
-	public void setExampleDimension(float exampleDimension) {
-		mExampleDimension = exampleDimension;
-		invalidateTextPaintAndMeasurements();
-	}
 
 	public void setMaxRange(int readingIndex, float maxRange) {
 		mMaxRange[readingIndex] = maxRange;
