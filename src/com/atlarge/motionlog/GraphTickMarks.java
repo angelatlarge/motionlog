@@ -12,8 +12,12 @@ class GraphTickMarks {
 	List<Float> mTicks;
 	int mTickCount;
 
-	GraphTickMarks(float min, float max, int ticks) {
-		mRange = niceNumber(max-min, false);
+	GraphTickMarks(float min, float max, int ticks, boolean loose) {
+		if (loose) {
+			mRange = niceNumber(max-min, false);
+		} else {
+			mRange = max-min;
+		}
 		mTickspacing = niceNumber(mRange/(ticks-1), true);
 		mGraphmin = (float)Math.floor(min/mTickspacing) * mTickspacing;
 		mGraphmax = (float)Math.ceil(max/mTickspacing) * mTickspacing;

@@ -383,7 +383,6 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 		if (mIsLogging) {
 			mSensorManager.unregisterListener(this);
 		} else {
-//			mGV = (GraphViewBase)findViewById(R.id.graphView);		
 			if (mSingleGraph) {
 				mGVs[0].clear();
 				mGVs[0].setGraphCount(3);

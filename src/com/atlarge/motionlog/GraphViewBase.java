@@ -169,7 +169,7 @@ public class GraphViewBase extends View {
 		mGridCanvas.setBitmap(mGridBitmap);
 		mGridBitmap.eraseColor(Color.TRANSPARENT);
 		
-		GraphTickMarks gtm = new GraphTickMarks(-mMaxRange[0], mMaxRange[0], (int)(mHeight/DEFAULT_GRID));
+		GraphTickMarks gtm = new GraphTickMarks(-mMaxRange[0], mMaxRange[0], (int)(mHeight/DEFAULT_GRID), false);
 		mGridLogicalSize = gtm.tickSpacing();
 		mGridScreenWidth = mHeight/(gtm.graphMax() - gtm.graphMin()) * mGridLogicalSize;
 
