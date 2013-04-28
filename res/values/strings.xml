@@ -8,6 +8,9 @@
     <string name="button_stop">Stop</string>
     <string name="local_service_started">local_service_started</string>
     <string name="notification_running_title">Motion Log Running</string>
+    <string name="proceed">Proceed</string>
+    <string name="cancel">Cancel</string>
+    <string name="log_confirmation_message">Saving to accelerometer data to log file is a battery-intensive operation. Your battery may get drained very quickly.</string>
     <string-array name="sensor_update_speed_strings">
         <item>Normal speed</item>
         <item>Increased speed</item>

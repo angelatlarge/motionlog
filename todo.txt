@@ -1,7 +1,6 @@
-Axis captions
-Axis labels
-Connect everything up: graph + log
-Make grid a bitmap, probably faster that way
+Make the confirmation dialog only pop-up when logging to file
+Add border around the graph views?
+Make the menu clicks semi-transparent
 Add a resource warning
 Consider scaling X axis appropriately
 Implement the orientation change correctly

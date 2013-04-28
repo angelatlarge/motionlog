@@ -4,9 +4,11 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.app.ActionBar;
 import android.app.Activity;
+import android.app.DialogFragment;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
@@ -32,6 +34,7 @@ import android.widget.Spinner;
 import android.widget.SpinnerAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -39,7 +42,7 @@ import android.hardware.SensorManager;
 
 
 @SuppressWarnings("unused")
-public class MainActivity extends Activity  implements OnItemSelectedListener, SensorEventListener  {
+public class MainActivity extends Activity  implements OnItemSelectedListener, SensorEventListener, LogConfirmationDialogFragment.DialogListener  {
 	private boolean mSingleGraph = false;
 	private static final int SENSORUPDATESPEED_NOSELECTION = -1;
     private AccelerometerLoggerService mService;
@@ -290,7 +293,13 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 		}
 		int layoutIndex = 1;
 		
+		// Set the graph view ranges and colors
+        SensorManager mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+        Sensor mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        float maxRange = mAccelerometer.getMaximumRange();
+        Log.d("MainActivity", String.format("Accelerometer maximum range: %f", maxRange));        
 		
+		DefaultColorIterator dci = new DefaultColorIterator();
 		for (int i=0;i<mGVs.length; i++) {
 			mGVs[i] = new GraphViewBitmap(this); 
 			LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, mSingleGraph?300:100, (float)0.48);
@@ -303,10 +312,17 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 				tv.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 				tv.setText(axisNames[i]);
 				layout.addView(tv, layoutIndex++);
+				
+				mGVs[i].setGraphCount(1);
+				mGVs[i].setMaxRange(0, maxRange);
+				mGVs[i].setGraphColor(0, dci.getNext());
+			} else {
+				mGVs[i].setGraphCount(3);
+				for (int j=0; j<3; j++) 
+					mGVs[i].setMaxRange(j, maxRange);
 			}
 			layout.addView(mGVs[i], layoutIndex++);
 		}
-			
 	}
 	
 	@Override
@@ -376,41 +392,35 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 	public void startStopButtonClick(View view) {
 		Log.d("MainActivity", "startStopButton clicked");
 		
-        SensorManager mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
-        Sensor mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        float maxRange = mAccelerometer.getMaximumRange();
-        Log.d("MainActivity", String.format("Accelerometer maximum range: %f", maxRange));        
 		if (mIsLogging) {
-			mSensorManager.unregisterListener(this);
-		} else {
-			if (mSingleGraph) {
-				mGVs[0].clear();
-				mGVs[0].setGraphCount(3);
-				for (int i=0; i<3; i++) 
-					mGVs[0].setMaxRange(i, maxRange);
-			} else {
-				DefaultColorIterator dci = new DefaultColorIterator();
-				for (int i=0; i<3; i++) { 
-					mGVs[i].clear();
-					mGVs[i].setGraphCount(1);
-					mGVs[i].setMaxRange(0, maxRange);
-					mGVs[i].setGraphColor(0, dci.getNext());
-				}
-			}
-//	        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-		}	
-//		mIsLogging = !mIsLogging;
-		
-		if (!mIsLogging) {
-			startLogging();
-		} else {
 			stopLogging();
-		}		
+		} else {
+		    DialogFragment newFragment = new LogConfirmationDialogFragment();
+		    newFragment.show(getFragmentManager(), "missiles");
+		}				
+	}
+	
+	@Override
+	public void onDialogPositiveClick(DialogFragment dialog) {
+		startLogging();
+	}
+
+	@Override
+	public void onDialogNegativeClick(DialogFragment dialog) {
+		ToggleButton btn = (ToggleButton)findViewById(R.id.button_startstop);
+		btn.setChecked(false);
 	}
 	
 	private void startLogging() {
-//		bindService(new Intent(this, AccelerometerLoggerService.class), mConnection, Context.BIND_AUTO_CREATE);
-//		mIsBound = true;
+		// Clear the graph views
+		if (mSingleGraph) {
+			mGVs[0].clear();
+		} else {
+			DefaultColorIterator dci = new DefaultColorIterator();
+			for (int i=0; i<3; i++) { 
+				mGVs[i].clear();
+			}
+		}
 		
 		int sensorRate;
 		if (mSensorUpdateSpeed == SENSORUPDATESPEED_NOSELECTION) {
@@ -522,4 +532,5 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 		Log.d("MainActivity", String.format("onSensorChanged, values: %s", sb.toString()));
 		processNewSensorValues(event.values, event.timestamp); 
 	}
+
 }

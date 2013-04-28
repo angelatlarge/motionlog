@@ -85,8 +85,11 @@ public class GraphViewBitmap extends GraphViewBase {
 	}
 
 	public void clear() {
+		if (mReadingsBitmap==null)
+			return;
 		for (int i=0; i<2;i++) {
-			mReadingsBitmap[i].eraseColor(Color.TRANSPARENT);
+			if (mReadingsBitmap[i] != null)
+				mReadingsBitmap[i].eraseColor(Color.TRANSPARENT);
 		}
 	}
 	
