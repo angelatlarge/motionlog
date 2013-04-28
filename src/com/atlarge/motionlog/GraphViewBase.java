@@ -156,16 +156,17 @@ public class GraphViewBase extends View {
 		mWidth = w;
 		mHeight = h;
 		
+	}
+	
+	protected void destroyGrid() {
+		mGridCanvas = null;
+		mGridBitmap = null;
+	}
+
+	protected void ensureGridExists() {
 		mGridBitmap = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
 		mGridCanvas = new Canvas();
 		mGridCanvas.setBitmap(mGridBitmap);
-
-		recreateGrid();
-		
-	}
-	
-	protected void recreateGrid() {
-		if (mGridCanvas==null) return;
 		mGridBitmap.eraseColor(Color.TRANSPARENT);
 		
 		GraphTickMarks gtm = new GraphTickMarks(-mMaxRange[0], mMaxRange[0], (int)(mHeight/DEFAULT_GRID));
@@ -174,14 +175,6 @@ public class GraphViewBase extends View {
 
 		Log.d("GraphViewBase", String.format("recreateGrid: mGridLogicalSize %f, mGridScreenWidth %f, max-min: %f/%f ", mGridLogicalSize, mGridScreenWidth, gtm.graphMax(), gtm.graphMin())); 
 		
-		/*
-			0-1
-			2-5
-			5-10
-		float fGridSizeStart = mMaxRange[0]
-		
-		mGridLogicalSize
-		*/
 		drawGrid(mGridCanvas);
 	}
 	
@@ -210,7 +203,7 @@ public class GraphViewBase extends View {
 		y[0] = nCenter-mGridScreenWidth; y[1] = nCenter+mGridScreenWidth;  
 		float logicalLabel = 0;
 		logicalLabel += mGridLogicalSize;
-		while (y[0]>0) {		// Positive y is down
+		while (y[0]>=0) {		// Positive y is down
 			// Draw the tick labels
 			StringBuilder sb = new StringBuilder('+' + Float.toString(logicalLabel));
 			canvas.drawText(sb.toString(), 0, y[0], mGridLabelPaint);
@@ -218,6 +211,7 @@ public class GraphViewBase extends View {
 			canvas.drawText(sb.toString(), 0, y[1], mGridLabelPaint);
 			y[0] -= mGridScreenWidth*2;
 			y[1] += mGridScreenWidth*2;		
+			logicalLabel += mGridLogicalSize;
 		}
 		// Draw grid labels
 /*		
@@ -229,6 +223,7 @@ public class GraphViewBase extends View {
 		super.onDraw(canvas);
 		Log.d("GraphViewBase", "draw()");  
 
+		ensureGridExists();
 		canvas.drawBitmap(mGridBitmap, 0, 0, null);
 //		drawGrid(canvas);
 		
@@ -245,6 +240,8 @@ public class GraphViewBase extends View {
 
 
 	public void setMaxRange(int readingIndex, float maxRange) {
+		if (readingIndex==0)
+			destroyGrid();
 		mMaxRange[readingIndex] = maxRange;
 	}
 	

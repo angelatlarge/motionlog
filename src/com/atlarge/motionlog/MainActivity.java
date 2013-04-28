@@ -523,7 +523,4 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 		Log.d("MainActivity", String.format("onSensorChanged, values: %s", sb.toString()));
 		processNewSensorValues(event.values, event.timestamp); 
 	}
-	
-
-
 }
