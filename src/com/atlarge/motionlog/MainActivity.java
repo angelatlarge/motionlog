@@ -12,6 +12,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.support.v4.content.LocalBroadcastManager;
@@ -49,6 +50,8 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 	private boolean mIsLogging = false;
 	private int mSensorUpdateSpeed = SENSORUPDATESPEED_NOSELECTION;
 	private GraphViewBase[] mGVs = null;
+	private static final boolean LOGCONFIRMATIONPROMPT_DEFAULT = true;
+	private boolean mLogConfirmationPrompt = LOGCONFIRMATIONPROMPT_DEFAULT;
 	int counter = 0;
 	
 	/********************************************************************/
@@ -260,20 +263,13 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 		ActionBar actionBar = getActionBar();
 		if (actionBar != null)
 			actionBar.hide();	
+	
+		// Read the preferences
+		readPreferences();
 		
 		// Create the GraphicViews
 		createGraphViews();
-		
-        /*
-    <com.atlarge.motionlog.GraphViewBitmap
-        android:id="@+id/graphView"
-        android:layout_width="match_parent"
-        android:layout_height="300dp"
-        android:layout_weight="0.48" 	
-    />
 
-        */
-        
 	}
 
 	private void createGraphViews() {
@@ -326,7 +322,12 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
 	}
-		
+	
+	private void readPreferences() {
+		SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
+		boolean mLogConfirmationPrompt = sharedPref.getBoolean(getString(R.string.saved_logconfirmationprompt), LOGCONFIRMATIONPROMPT_DEFAULT);		
+	}
+	
 	@Override
 	public void onPause() {
 		super.onPause();
@@ -390,13 +391,25 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 		if (mIsLogging) {
 			stopLogging();
 		} else {
-		    DialogFragment newFragment = new LogConfirmationDialogFragment();
-		    newFragment.show(getFragmentManager(), "missiles");
+			if (mLogConfirmationPrompt) {
+			    DialogFragment newFragment = new LogConfirmationDialogFragment();
+			    newFragment.show(getFragmentManager(), null);
+			} else {
+				startLogging();
+			}
 		}				
 	}
 	
 	@Override
 	public void onDialogPositiveClick(DialogFragment dialog, boolean doNotAskAgain) {
+		if (doNotAskAgain) {
+			mLogConfirmationPrompt = false;
+			SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
+			SharedPreferences.Editor editor = sharedPref.edit();
+			editor.putBoolean(getString(R.string.saved_logconfirmationprompt), false);
+			editor.commit();
+		}
+		
 		startLogging();
 	}
 
@@ -410,6 +423,13 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 	public void onDialogCancel(DialogFragment dialog, boolean doNotAskAgain) {
 		ToggleButton btn = (ToggleButton)findViewById(R.id.button_startstop);
 		btn.setChecked(false);
+	}
+	
+	private void savePreferences() {
+		SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
+		SharedPreferences.Editor editor = sharedPref.edit();
+		// TODO: Write this
+		editor.commit();
 	}
 	
 	private void startLogging() {

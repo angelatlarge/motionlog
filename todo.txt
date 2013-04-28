@@ -1,5 +1,7 @@
 Make the confirmation dialog only pop-up when logging to file
-Add a checkbox to the confirmation dialog
+Add settings dialog
+	Logging confirmation
+	Skipping sensor events
 Add border around the graph views?
 Make the menu clicks semi-transparent
 Add a resource warning

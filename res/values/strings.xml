@@ -11,6 +11,7 @@
     <string name="proceed">Proceed</string>
     <string name="cancel">Cancel</string>
     <string name="donotaskagain">Do not ask again</string>
+    <string name="saved_logconfirmationprompt">atlarge.motionlog.logconfirmprompt</string>
     <string name="log_confirmation_message">Saving to accelerometer data to log file is a battery-intensive operation. Your battery may get drained very quickly.</string>
     <string-array name="sensor_update_speed_strings">
         <item>Normal speed</item>
