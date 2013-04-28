@@ -28,6 +28,9 @@ public class GraphViewBase extends View {
 	protected Paint[] mGraphPaints;
 	protected float mExampleDimension = 0; // TODO: use a default from R.dimen...
 
+	protected Canvas mGridCanvas;
+	protected Bitmap mGridBitmap;
+	
 	protected TextPaint mTextPaint;
 	protected float mTextWidth;
 	protected float mTextHeight;
@@ -138,6 +141,14 @@ public class GraphViewBase extends View {
 		Log.d("GraphViewBase", String.format("onSizeChanged(%d,%d,%d,%d", w, h, oldw, oldh));
 		mWidth = w;
 		mHeight = h;
+		
+		mGridBitmap = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
+		mGridBitmap.eraseColor(Color.TRANSPARENT);
+		mGridCanvas = new Canvas();
+		mGridCanvas.setBitmap(mGridBitmap);
+		
+		drawGrid(mGridCanvas);
+		
 	}
 	
 	private void invalidateTextPaintAndMeasurements() {
@@ -178,7 +189,8 @@ public class GraphViewBase extends View {
 		super.onDraw(canvas);
 		Log.d("GraphViewBase", "draw()");  
 
-		drawGrid(canvas);
+		canvas.drawBitmap(mGridBitmap, 0, 0, null);
+//		drawGrid(canvas);
 		
 	}
 

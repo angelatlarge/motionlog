@@ -1,9 +1,9 @@
+Axis captions
 Axis labels
 Connect everything up: graph + log
 Make grid a bitmap, probably faster that way
 Add a resource warning
 Consider scaling X axis appropriately
-Make three graphs
 Implement the orientation change correctly
 Disconnect app from sensors when paused
 Test app installation

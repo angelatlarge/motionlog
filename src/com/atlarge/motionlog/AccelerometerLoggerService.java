@@ -68,6 +68,8 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	private int mLoggingType = DEFAULT_LOGTYPE;
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
+    
+    private int mCounter = 0;
 	
 	// Handler that receives messages from the thread
 	@SuppressLint("HandlerLeak")
@@ -251,27 +253,29 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	
 	@Override
 	public void onSensorChanged(SensorEvent event) {
-		Log.v("AccelerometerLoggerService", "onSensorChanged");
-        try {
-    		if ((mLoggingType & LOGTYPE_FILE) > 0) {
-    			Log.v("AccelerometerLoggerService", "saving to file");
-	        	logWriter.print(event.timestamp);
-	        	for (int i=0;i<event.values.length;i++)
-	        		logWriter.format("\t%f", event.values[i]);
-	        	logWriter.println();
-    		}
-    		if ((mLoggingType & LOGTYPE_GRAPH) > 0) {
-        		// Notify the parent window
-    			Log.v("AccelerometerLoggerService", "notifying parent");
-        		Intent intent = new Intent();
-        		intent.setAction(ACTION_SENSORCHANGED);
-        		intent.putExtra(INTENTEXTRA_SENSORVALUES, event.values);
-        		intent.putExtra(INTENTEXTRA_SENSORTIMESTAMP, event.timestamp);
-        		LocalBroadcastManager.getInstance(this).sendBroadcast(intent);        		
-        	}
-        } catch (Exception e) {
-            e.printStackTrace();
-        }    
+//		if (++mCounter % 50 == 0) {
+			Log.v("AccelerometerLoggerService", "onSensorChanged");
+	        try {
+	    		if ((mLoggingType & LOGTYPE_FILE) > 0) {
+	    			Log.v("AccelerometerLoggerService", "saving to file");
+		        	logWriter.print(event.timestamp);
+		        	for (int i=0;i<event.values.length;i++)
+		        		logWriter.format("\t%f", event.values[i]);
+		        	logWriter.println();
+	    		}
+	    		if ((mLoggingType & LOGTYPE_GRAPH) > 0) {
+	        		// Notify the parent window
+	    			Log.v("AccelerometerLoggerService", "notifying parent");
+	        		Intent intent = new Intent();
+	        		intent.setAction(ACTION_SENSORCHANGED);
+	        		intent.putExtra(INTENTEXTRA_SENSORVALUES, event.values);
+	        		intent.putExtra(INTENTEXTRA_SENSORTIMESTAMP, event.timestamp);
+	        		LocalBroadcastManager.getInstance(this).sendBroadcast(intent);        		
+	        	}
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }
+//		}
 	}
 	
 	private void notificationStart() {
