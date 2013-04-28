@@ -5,6 +5,7 @@ import android.os.IBinder;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.DialogFragment;
+import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -45,16 +46,18 @@ import android.hardware.SensorManager;
 @SuppressWarnings("unused")
 public class MainActivity extends Activity  implements OnItemSelectedListener, SensorEventListener, LogConfirmationDialogFragment.DialogListener  {
 	private boolean mSingleGraph = false;
-	private static final int SENSORUPDATESPEED_NOSELECTION = -1;
     private AccelerometerLoggerService mService;
 	private boolean mIsLogging = false;
-	private int mSensorUpdateSpeed = SENSORUPDATESPEED_NOSELECTION;
+	private int mSensorUpdateSpeed = AccelerometerLoggerService.DEFAULT_SENSOR_RATE;
+	private int mLogTargetType = AccelerometerLoggerService.LOGTYPE_GRAPH;
 	private GraphViewBase[] mGVs = null;
 	private static final boolean LOGCONFIRMATIONPROMPT_DEFAULT = true;
 	private boolean mLogConfirmationPrompt = LOGCONFIRMATIONPROMPT_DEFAULT;
 	int counter = 0;
 	IconicSpinnerAdapter mSpeedSpinnerAdapter;
 	IconicSpinnerAdapter mLogTargetSpinnerAdapter;
+	StringResourceMapper mSpeedSpinnerMapping;
+	StringResourceMapper mLogTargetSpinnerMapping;
 	
 	/********************************************************************/
 	private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
@@ -162,8 +165,12 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 			return getIconicView(position, convertView, parent, viewDroppedRowResourceID);
 		}	
 		
-		private String getPositionalString(int pos) {
+		public String getPositionalString(int pos) {
 			return getString(stringIds.getResourceId(pos, 0));
+		}
+		
+		public int getStringId(int pos) {
+			return stringIds.getResourceId(pos, 0);
 		}
 		
 		private View getIconicView(int pos, View convertView, ViewGroup parent, int rowResourceID) {
@@ -211,6 +218,7 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		Log.d("MainActivity", "onCreate");
 		setContentView(R.layout.activity_main);
 		IntentFilter filter = new IntentFilter();
 		filter.addAction(AccelerometerLoggerService.ACTION_STATUS_LOGGING);
@@ -219,6 +227,11 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 		LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver, filter);
 		
 		// The speed spinner
+		mSpeedSpinnerMapping = 
+			new StringResourceMapper(
+					new int[] {R.string.menu_SENSORDELAY_NORMAL ,R.string.menu_SENSORDELAY_UI,  R.string.menu_SENSORDELAY_GAME,  R.string.menu_SENSORDELAY_FASTEST},
+					new int[] {SensorManager.SENSOR_DELAY_NORMAL,SensorManager.SENSOR_DELAY_UI, SensorManager.SENSOR_DELAY_GAME, SensorManager.SENSOR_DELAY_FASTEST}
+				);
 		Spinner spinnerSpeed = (Spinner) findViewById(R.id.spinner_updatefrequency);
 		mSpeedSpinnerAdapter  = new IconicSpinnerAdapter(
 				this, 
@@ -232,8 +245,14 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 		spinnerSpeed.setAdapter(mSpeedSpinnerAdapter);
 		spinnerSpeed.setOnItemSelectedListener(this);
 		
+		// Capture type spinner
+		mLogTargetSpinnerMapping = 
+				new StringResourceMapper(
+						new int[] {R.string.menu_CAPTURETARGET_GRAPH ,      R.string.menu_CAPTURETARGET_FILE,        R.string.menu_CAPTURETARGET_BOTH},
+						new int[] {AccelerometerLoggerService.LOGTYPE_GRAPH,AccelerometerLoggerService.LOGTYPE_FILE, AccelerometerLoggerService.LOGTYPE_BOTH}
+					);
 		Spinner spinnerCaptureType = (Spinner) findViewById(R.id.spinnerCaptureType);
-		IconicSpinnerAdapter mLogTargetSpinnerAdapter  = new IconicSpinnerAdapter(
+		mLogTargetSpinnerAdapter  = new IconicSpinnerAdapter(
 				this, 
 				R.array.capturetarget_string_ids,
 				R.array.capturetarget_icons,
@@ -244,14 +263,13 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 				);
 		spinnerCaptureType.setAdapter(mLogTargetSpinnerAdapter);
 		spinnerCaptureType.setOnItemSelectedListener(this);
-
+		
 		// Specify the layout to use when the list of choices appears
 		// Apply the adapter to the spinner
 		// Connect the listener
 		
 		// We do not connect to service updating the UI here
 		// because we do tat in onResume()
-		Log.d("MainActivity", "onCreate");
 		
 		ActionBar actionBar = getActionBar();
 		if (actionBar != null)
@@ -436,26 +454,13 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 			}
 		}
 		
-		int sensorRate;
-		if (mSensorUpdateSpeed == SENSORUPDATESPEED_NOSELECTION) {
-			sensorRate = AccelerometerLoggerService.DEFAULT_SENSOR_RATE;
-		} else if (mSensorUpdateSpeed == 0) {
-			sensorRate = SensorManager.SENSOR_DELAY_NORMAL;
-		} else if (mSensorUpdateSpeed == 1) {
-			sensorRate = SensorManager.SENSOR_DELAY_UI;
-		} else if (mSensorUpdateSpeed == 2) {
-			sensorRate = SensorManager.SENSOR_DELAY_GAME;
-		} else if (mSensorUpdateSpeed == 2) {
-			sensorRate = SensorManager.SENSOR_DELAY_FASTEST;
-		} else {
-			sensorRate = AccelerometerLoggerService.DEFAULT_SENSOR_RATE;
-		}
-		Log.v("MainActivity", String.format("Using sensor rate: %d\n", sensorRate));
+		Log.v("MainActivity", String.format("Using sensor rate: %d\n", mSensorUpdateSpeed));
 			
 		// Communicate with the service via the startService command
 		Intent intent = new Intent(this, AccelerometerLoggerService.class);
 		intent.putExtra(AccelerometerLoggerService.INTENTEXTRA_COMMAND, AccelerometerLoggerService.INTENTCOMMAND_STARTLOGGING);
-		intent.putExtra(AccelerometerLoggerService.INTENTEXTRA_UPDATERATE, sensorRate);
+		intent.putExtra(AccelerometerLoggerService.INTENTEXTRA_UPDATERATE, mSensorUpdateSpeed);
+		intent.putExtra(AccelerometerLoggerService.INTENTEXTRA_LOGGINGTYPE, mLogTargetType);
 		intent.putExtra(AccelerometerLoggerService.INTENTEXTRA_STATUS_FORCENOTIFYFLAG, true);
 
 		ComponentName startResult = startService(intent);
@@ -483,20 +488,32 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 	public void onItemSelected(AdapterView<?> parent, View view,  int pos, long id) {
 		// An item was selected. You can retrieve the selected item using
         // parent.getItemAtPosition(pos)
-		if (view.getId() == R.id.spinner_updatefrequency) {
-			Log.v("MainActivity", String.format("New mSensorUpdateSpeed: %d\n", pos));
-			mSensorUpdateSpeed = pos;
-		} else if (view.getId() == R.id.spinnerCaptureType) {
-			// TODO: Implement this
+		int nItemStringId;
+		IconicSpinnerAdapter adapter = null;
+		StringResourceMapper mapper = null;
+		
+		if (parent.getId() == R.id.spinner_updatefrequency) {
+			adapter = mSpeedSpinnerAdapter;
+			mapper = mSpeedSpinnerMapping;
+			nItemStringId = adapter.getStringId(pos);
+			mSensorUpdateSpeed = mapper.toNumericId(nItemStringId);
+			Log.v("MainActivity", String.format("New mSensorUpdateSpeed: %s\n", adapter.getPositionalString(pos)));
+		} else if (parent.getId() == R.id.spinnerCaptureType) {
+			adapter = mLogTargetSpinnerAdapter;
+			mapper = mLogTargetSpinnerMapping;
+			nItemStringId = adapter.getStringId(pos);
+			mLogTargetType = mapper.toNumericId(nItemStringId);
+			Log.v("MainActivity", String.format("New mLogTargetType: %s\n", adapter.getPositionalString(pos)));
 		} else {
 			Log.e("MainActivity", "Unknown source of on item selected"); 
 		}
+		
+		
 	}
 
 	@Override
 	public void onNothingSelected(AdapterView<?> arg0) {
 		// TODO Auto-generated method stub
-		mSensorUpdateSpeed = SENSORUPDATESPEED_NOSELECTION;
 	}
 
 	private void updateButtonUI(boolean isLogging) {

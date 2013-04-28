@@ -34,8 +34,8 @@ import android.widget.Toast;
 
 @SuppressWarnings("unused")
 public class AccelerometerLoggerService extends Service implements SensorEventListener {
-	public static final int LOGTYPE_FILE = 1;
-	public static final int LOGTYPE_GRAPH = 2;
+	public static final int LOGTYPE_GRAPH = 1;
+	public static final int LOGTYPE_FILE = 2;
 	public static final int LOGTYPE_BOTH = 3;
 	
 	public static final String ACTION_STATUS_LOGGING = "com.atlarge.motionlog.status.logging";
