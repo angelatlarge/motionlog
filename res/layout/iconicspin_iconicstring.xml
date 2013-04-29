@@ -8,9 +8,18 @@
 		android:id="@+id/iconicspin_icon"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
-		android:src="@drawable/ic_dialog_speed_slow"/>
+		android:src="@drawable/ic_dialog_speed_slow"
+		android:padding="6dip"
+		android:layout_marginTop="5dip"
+	/>
 	<TextView
 		android:id="@+id/iconicspin_text"
 		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"/>
+		android:layout_height="wrap_content"
+		android:layout_centerVertical="true"
+		android:textSize="18sp"
+		android:padding="10dip"
+		android:layout_marginTop="4dip"
+
+	/>
 </LinearLayout>
