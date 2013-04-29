@@ -25,4 +25,7 @@
         <item>Y axis</item>
         <item>Z axis</item>
     </string-array>
+	<string name="prefs_maintitle">Preferences</string>
+	<string name="prefs_title_logwarn">Battery warning</string>
+	<string name="prefs_summary_logwarn">Prompt when starting a potentially battery-killing logging activity</string>
 </resources>
