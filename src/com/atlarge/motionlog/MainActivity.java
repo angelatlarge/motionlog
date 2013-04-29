@@ -494,12 +494,20 @@ public class MainActivity extends Activity  implements
 	    switch (item.getItemId()) {
 	        case R.id.action_settings:
 	    		Log.d("MainActivity", "onOptionsItemSelected: action_settings");
-	        	Intent intent = new Intent(this, SettingsActivity.class);
-	        	startActivity(intent);
+	    		showSettings();
 	        	return true;
 	        default:
 	            return super.onOptionsItemSelected(item);
 	    }
+	}
+
+	private void showSettings() {
+    	Intent intent = new Intent(this, SettingsActivity.class);
+    	startActivity(intent);
+	}		
+	
+	public void buttonsettings_click(View view) {
+		showSettings();
 	}
 	
 	public void buttonLogTargetClick(View view) {
