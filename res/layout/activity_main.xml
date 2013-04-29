@@ -18,36 +18,22 @@
         android:id="@+id/toolbar"
     >
 
-        <TextView
-            android:id="@+id/textView2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentLeft="true"
-            android:layout_centerVertical="true"
-            android:text="Capture"
-            android:textAppearance="?android:attr/textAppearanceSmall" />
-
+        
         <Spinner
             android:id="@+id/spinnerCaptureType"
             android:layout_width="45dp"
             android:layout_height="wrap_content"
-            android:layout_toRightOf="@id/textView2" />
-
-        <TextView
-            android:id="@+id/textView3"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_toRightOf="@+id/spinnerCaptureType"
-            android:layout_centerVertical="true"
-            android:text="Speed:"
-            android:textAppearance="?android:attr/textAppearanceSmall" />
+            style="@android:style/Widget.Holo.Light.Button.Small"            
+        />
 
         <Spinner
             android:id="@+id/spinner_updatefrequency"
             android:layout_width="45dp"
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
-            android:layout_toRightOf="@+id/textView3" />
+            android:layout_toRightOf="@+id/spinnerCaptureType" 
+            style="@android:style/Widget.Holo.Light.Button.Small"            
+        />
 
         <ToggleButton
             android:id="@+id/button_startstop"

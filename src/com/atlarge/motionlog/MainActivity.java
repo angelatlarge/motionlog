@@ -24,7 +24,9 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MenuItem.OnMenuItemClickListener;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
@@ -35,6 +37,8 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu;
+import android.widget.PopupWindow;
 import android.widget.Spinner;
 import android.widget.SpinnerAdapter;
 import android.widget.TextView;
@@ -47,7 +51,15 @@ import android.hardware.SensorManager;
 
 
 @SuppressWarnings("unused")
-public class MainActivity extends Activity  implements OnItemSelectedListener, SensorEventListener, LogConfirmationDialogFragment.DialogListener  {
+public class MainActivity extends Activity  implements 
+			OnItemSelectedListener, 
+			SensorEventListener, 
+			LogConfirmationDialogFragment.DialogListener, 
+			OnMenuItemClickListener, 
+			DialogInterface.OnClickListener, 
+			AdapterView.OnItemClickListener , 
+			PopupWindow.OnDismissListener
+{
 	private boolean mSingleGraph = false;
     private AccelerometerLoggerService mService;
 	private boolean mIsLogging = false;
@@ -57,11 +69,20 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 	private static final boolean LOGCONFIRMATIONPROMPT_DEFAULT = true;
 	private boolean mLogConfirmationPrompt = LOGCONFIRMATIONPROMPT_DEFAULT;
 	int counter = 0;
-	IconicSpinnerAdapter mSpeedSpinnerAdapter;
-	IconicSpinnerAdapter mLogTargetSpinnerAdapter;
+	IconicAdapter mSpeedSpinnerAdapter;
+	IconicAdapter mLogTargetSpinnerAdapter;
 	StringResourceMapper mSpeedSpinnerMapping;
 	StringResourceMapper mLogTargetSpinnerMapping;
-		
+
+	/********************************************************************/
+/*	
+	private class IconicPopupMenu extends PopupMenu {
+		IconicPopupMenu(Context context, View anchor) {
+			super(context, anchor);
+			setForceShowIcon(true); //ADD THIS LINE
+		}
+	}
+*/	
 	/********************************************************************/
 	private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
 	  	@Override
@@ -110,113 +131,6 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 	
 	/********************************************************************/
 	
-	public class IconicSpinnerAdapter extends android.widget.BaseAdapter implements SpinnerAdapter {
-		private final int stringArrayResourceID;
-		private final TypedArray stringIds;
-		private final TypedArray icons;
-//		private final int textViewResourceId;
-		private final int viewBasicRowResourceID;
-		private final int viewDroppedRowResourceID;
-		private final Context context;
-		private final int viewRowTextResourceID; 
-		private final int viewRowIconResourceID;
-		
-
-		public IconicSpinnerAdapter(
-				Context _context, 
-//				int _textViewResourceId, 
-				int _stringArrayResourceID,
-				int _iconArrayResourceID, 
-				int _viewBasicRowResourceID, 
-				int _viewDroppedRowResourceID, 
-				int _viewRowTextResourceID, 
-				int _viewRowIconResourceID
-				) {
-			super();
-			context = _context;
-//			textViewResourceId = _textViewResourceId;
-			viewBasicRowResourceID = _viewBasicRowResourceID;
-			viewDroppedRowResourceID = _viewDroppedRowResourceID;
-			stringArrayResourceID = _stringArrayResourceID;
-			Resources res = getResources();
-			if (_stringArrayResourceID != 0) {
-				// Real resource ID
-				stringIds = res.obtainTypedArray(_stringArrayResourceID);
-			} else {
-				// Null resource id
-				stringIds = null;
-			}
-			if (_iconArrayResourceID != 0) {
-				// Real resource ID 
-				icons = res.obtainTypedArray(_iconArrayResourceID);
-			} else {
-				// Nonexistent resource ID
-				icons = null;
-			}
-			viewRowTextResourceID = _viewRowTextResourceID; 
-			viewRowIconResourceID = _viewRowIconResourceID;
-		}
-
-		@Override
-		public View getView(int position, View convertView, ViewGroup parent) {
-			return getIconicView(position, convertView, parent, viewBasicRowResourceID);
-		}
-		
-		@Override
-		public View getDropDownView(int position, View convertView, ViewGroup parent) {
-			// TODO Auto-generated method stub
-			return getIconicView(position, convertView, parent, viewDroppedRowResourceID);
-		}	
-		
-		public String getPositionalString(int pos) {
-			return getString(stringIds.getResourceId(pos, 0));
-		}
-		
-		public int getStringId(int pos) {
-			return stringIds.getResourceId(pos, 0);
-		}
-		
-		private View getIconicView(int pos, View convertView, ViewGroup parent, int rowResourceID) {
-			// This is for the regular view
-			LayoutInflater inflater=getLayoutInflater();
-			View rowView = inflater.inflate(rowResourceID, parent, false);
-			if (stringIds != null) {
-				// There is a string array
-				TextView label=(TextView)rowView.findViewById(viewRowTextResourceID);
-				if (label != null) {
-					// Label present
-					if (stringIds.length()>pos)	// out-of-bounds check
-						label.setText(getPositionalString(pos));
-				}
-			}
-			
-			if (icons != null) {
-				ImageView icon=(ImageView)rowView.findViewById(viewRowIconResourceID);
-				if (icon != null) {
-					// Icon present
-					if (icons.length()>pos)	// out-of-bounds check
-						icon.setImageDrawable(icons.getDrawable(pos));
-				}
-			}
-
-			return rowView;
-		}
-
-		@Override
-		public int getCount() {
-			return stringIds.length();
-		}
-
-		@Override
-		public Object getItem(int pos) {
-			return getPositionalString(pos);
-		}
-
-		@Override
-		public long getItemId(int pos) {
-			return pos;
-		}
-	}
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -236,7 +150,7 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 					new int[] {SensorManager.SENSOR_DELAY_NORMAL,SensorManager.SENSOR_DELAY_UI, SensorManager.SENSOR_DELAY_GAME, SensorManager.SENSOR_DELAY_FASTEST}
 				);
 		Spinner spinnerSpeed = (Spinner) findViewById(R.id.spinner_updatefrequency);
-		mSpeedSpinnerAdapter  = new IconicSpinnerAdapter(
+		mSpeedSpinnerAdapter  = new IconicAdapter(
 				this, 
 				R.array.sensor_update_speed_string_ids,
 				R.array.sensor_update_speed_icons,
@@ -255,7 +169,7 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 						new int[] {AccelerometerLoggerService.LOGTYPE_GRAPH,AccelerometerLoggerService.LOGTYPE_FILE, AccelerometerLoggerService.LOGTYPE_BOTH}
 					);
 		Spinner spinnerCaptureType = (Spinner) findViewById(R.id.spinnerCaptureType);
-		mLogTargetSpinnerAdapter  = new IconicSpinnerAdapter(
+		mLogTargetSpinnerAdapter  = new IconicAdapter(
 				this, 
 				R.array.capturetarget_string_ids,
 				R.array.capturetarget_icons,
@@ -492,7 +406,7 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 		// An item was selected. You can retrieve the selected item using
         // parent.getItemAtPosition(pos)
 		int nItemStringId;
-		IconicSpinnerAdapter adapter = null;
+		IconicAdapter adapter = null;
 		StringResourceMapper mapper = null;
 		
 		if (parent.getId() == R.id.spinner_updatefrequency) {
@@ -587,10 +501,71 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 	            return super.onOptionsItemSelected(item);
 	    }
 	}
+	
+	public void buttonLogTargetClick(View view) {
+//		IconicPopupMenu.showPopup(this, mLogTargetSpinnerAdapter, this);
+/*		
+		IconicPopupMenuListPopupWindow.showPopup(
+			this, 
+			new IconicAdapter(
+					this, 
+					R.array.capturetarget_string_ids,
+					R.array.capturetarget_icons,
+					R.layout.iconicspin_iconicstring,
+					R.layout.iconicspin_iconicstring,
+					R.id.iconicspin_text, 
+					R.id.iconicspin_icon 
+					),
+			findViewById(R.id.button_logtarget),
+			this, 
+			this
+			);
+*/			
+/*		
+		View sourceView = findViewById(R.id.button_logtarget);
+	    PopupMenu popup = new PopupMenu(this, sourceView);
+	    MenuInflater inflater = popup.getMenuInflater();
+	    inflater.inflate(R.menu.popup_sensordelay, popup.getMenu());
+	    popup.show();
+*/	    
+	}
+	
+	public boolean onMenuItemClick(MenuItem item) {
+	    switch (item.getItemId()) {
+	        case R.id.sensor_delay_slow:
+	            return true;
+	        case R.id.sensor_delay_medium:
+	        	return true;
+	        case R.id.sensor_delay_fast:
+	        	return true;
+	        case R.id.sensor_delay_vfast:
+	            return true;
+	        default:
+	            return false;
+	    }
+	}	
 /*	
 	@Override
 	public void onConfigurationChanged(Configuration newConfig) {
 		// TODO: Nothing for now
 	}
-*/	
+*/
+
+	@Override
+	public void onClick(DialogInterface dialog, int which) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onDismiss() {
+		// TODO Auto-generated method stub
+		
+	}	
 }

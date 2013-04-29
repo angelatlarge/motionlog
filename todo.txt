@@ -1,3 +1,8 @@
+Drop down menus:
+	1. I don't like the spinner look, want to replace it with a plain button
+	2. I tried using the AlertDialogBuilder, however the problem was that alert dialog always sizes to fill up the parent window
+	3. On the other hand ListPopupWindow cannot size to content either, as it sizes to the width of the anchored items 
+
 Improved "in progress" icon
 Hook up the preference logging confirmation with the logging confirmation
 Test the app - logging
