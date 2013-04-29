@@ -2,6 +2,7 @@ package com.atlarge.motionlog;
 
 import android.os.Bundle;
 import android.os.IBinder;
+import android.preference.PreferenceFragment;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.DialogFragment;
@@ -22,6 +23,7 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
@@ -58,7 +60,7 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 	IconicSpinnerAdapter mLogTargetSpinnerAdapter;
 	StringResourceMapper mSpeedSpinnerMapping;
 	StringResourceMapper mLogTargetSpinnerMapping;
-	
+		
 	/********************************************************************/
 	private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
 	  	@Override
@@ -402,7 +404,7 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 		if (mIsLogging) {
 			stopLogging();
 		} else {
-			if (mLogConfirmationPrompt) {
+			if (mLogConfirmationPrompt && ((mLogTargetType & AccelerometerLoggerService.LOGTYPE_FILE) > 0)) {
 			    DialogFragment newFragment = new LogConfirmationDialogFragment();
 			    newFragment.show(getFragmentManager(), null);
 			} else {
@@ -570,5 +572,18 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 		processNewSensorValues(event.values, event.timestamp); 
 	}
 
-
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		Log.d("MainActivity", "onOptionsItemSelected");
+	    // Handle item selection
+	    switch (item.getItemId()) {
+	        case R.id.action_settings:
+	    		Log.d("MainActivity", "onOptionsItemSelected: action_settings");
+	        	Intent intent = new Intent(this, SettingsActivity.class);
+	        	startActivity(intent);
+	        	return true;
+	        default:
+	            return super.onOptionsItemSelected(item);
+	    }
+	}
 }

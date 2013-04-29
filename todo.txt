@@ -1,5 +1,3 @@
-Make the "log to where" option actually do something
-Make the confirmation dialog only pop-up when logging to file
 Add settings dialog
 	Logging confirmation
 	Skipping sensor events
