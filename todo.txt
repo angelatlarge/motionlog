@@ -1,5 +1,7 @@
 Add border around the graph views?
 Margin for text labels
+Vertically center the text labels
+
 Improved icon
 Hook up the preference logging confirmation with the logging confirmation
 Test the app - logging

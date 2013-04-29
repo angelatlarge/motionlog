@@ -25,18 +25,21 @@ public class GraphViewBase extends View {
 	protected int mExampleColor = Color.RED; // TODO: use a default from
 											// R.color...
 	protected Paint mGridPaint;
+	protected Paint mBorderPaint;
 	protected Paint mCenterPaint;
 	protected Paint[] mGraphPaints;
 	protected float mExampleDimension = 0; // TODO: use a default from R.dimen...
 
 	protected Canvas mGridCanvas;
 	protected Bitmap mGridBitmap;
-	
+
+	private static final float GRIDLABEL_SIZE = 12;
 	protected TextPaint mGridLabelPaint;
 	protected float mTextWidth;
 	protected float mTextHeight;
 	protected float mGridScreenWidth;
 	protected float mGridLogicalSize;
+	protected int mGridLegendDecimals;
 	
 	protected float[] mMaxRange;
 	
@@ -87,8 +90,13 @@ public class GraphViewBase extends View {
 		mGridLabelPaint.setColor(0xFFFFFFFF);
 		mGridLabelPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
 		mGridLabelPaint.setTextAlign(Paint.Align.LEFT);
-		mGridLabelPaint.setTextSize(12);
+		mGridLabelPaint.setTextSize(GRIDLABEL_SIZE);
 
+		mBorderPaint = new Paint();
+		mBorderPaint.setARGB (0xFF,0x40,0x40,0x40);
+		mBorderPaint.setStyle(Paint.Style.STROKE);
+		mBorderPaint.setStrokeWidth(1);
+		
 		mGridPaint = new Paint();
 		mGridPaint.setARGB (0xFF,0x20,0x20,0x20);
 		mGridPaint.setStyle(Paint.Style.STROKE);
@@ -172,7 +180,8 @@ public class GraphViewBase extends View {
 		GraphTickMarks gtm = new GraphTickMarks(-mMaxRange[0], mMaxRange[0], (int)(mHeight/DEFAULT_GRID), false);
 		mGridLogicalSize = gtm.tickSpacing();
 		mGridScreenWidth = mHeight/(gtm.graphMax() - gtm.graphMin()) * mGridLogicalSize;
-
+		mGridLegendDecimals = gtm.fractionalDigits();
+		
 		Log.d("GraphViewBase", String.format("recreateGrid: mGridLogicalSize %f, mGridScreenWidth %f, max-min: %f/%f ", mGridLogicalSize, mGridScreenWidth, gtm.graphMax(), gtm.graphMin())); 
 		
 		drawGrid(mGridCanvas);
@@ -199,22 +208,34 @@ public class GraphViewBase extends View {
 			y[1] += mGridScreenWidth;		
 		}
 		
+		// Border
+		canvas.drawRect(0, 0, mWidth-1, mHeight-1, mBorderPaint);
+		
 		// Horizontal labels
+		Paint.FontMetrics fontMetrics = mGridLabelPaint.getFontMetrics();
+		//~ mTextHeight = fontMetrics.bottom;
+		
+		
 		y[0] = nCenter-mGridScreenWidth; y[1] = nCenter+mGridScreenWidth;  
 		float logicalLabel = 0;
 		logicalLabel += mGridLogicalSize;
 		while (y[0]>=0) {		// Positive y is down
 			// Draw the tick labels
-			StringBuilder sb = new StringBuilder('+' + Float.toString(logicalLabel));
-			canvas.drawText(sb.toString(), 0, y[0], mGridLabelPaint);
+			StringBuilder sb = new StringBuilder(String.format("%+." + ((Integer)(mGridLegendDecimals)).toString() + "f", logicalLabel));
+//					Float.toString(logicalLabel));
+			canvas.drawText(sb.toString(), GRIDLABEL_SIZE/2, y[0]+fontMetrics.bottom, mGridLabelPaint);
 			sb.setCharAt(0, '-');
-			canvas.drawText(sb.toString(), 0, y[1], mGridLabelPaint);
+			canvas.drawText(sb.toString(), GRIDLABEL_SIZE/2, y[1]+fontMetrics.bottom, mGridLabelPaint);
 			y[0] -= mGridScreenWidth*2;
 			y[1] += mGridScreenWidth*2;		
-			logicalLabel += mGridLogicalSize;
+			logicalLabel += mGridLogicalSize*2;
 		}
-		// Draw grid labels
-/*		
+		
+		
+		
+		/*		
+		mTextWidth = mTextPaint.measureText(mExampleString);
+
 */	
 	}
 	
