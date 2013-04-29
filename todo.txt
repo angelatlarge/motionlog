@@ -1,8 +1,4 @@
-Add border around the graph views?
-Margin for text labels
-Vertically center the text labels
-
-Improved icon
+Improved "in progress" icon
 Hook up the preference logging confirmation with the logging confirmation
 Test the app - logging
 Make the menu icons semi-transparent

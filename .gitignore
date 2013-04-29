@@ -36,3 +36,7 @@ res/drawable-xhdpi/ic_dialog_speed_fast.png
 res/drawable-xhdpi/ic_dialog_speed_medium.png
 res/drawable-xhdpi/ic_dialog_speed_slow.png
 res/drawable-xhdpi/ic_dialog_speed_vfast.png
+res/drawable-hdpi/ic_dialog_settings.png
+res/drawable-ldpi/ic_dialog_settings.png
+res/drawable-mdpi/ic_dialog_settings.png
+res/drawable-xhdpi/ic_dialog_settings.png
