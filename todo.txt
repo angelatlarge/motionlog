@@ -1,11 +1,22 @@
-Add settings dialog
-	Logging confirmation
-	Skipping sensor events
 Add border around the graph views?
-Make the menu clicks semi-transparent
-Add a resource warning
-Consider scaling X axis appropriately
-Implement the orientation change correctly
+Margin for text labels
+Improved icon
+Hook up the preference logging confirmation with the logging confirmation
+Test the app - logging
+Make the menu icons semi-transparent
+Make sure that the service is killed when app is paused/killed when logging to screen only
+Make sure that the right things happen when app is restored
+Make an installation
+Remove text preceding the options icons
+Add a settings button
+Add a text view showing statistics
+Disable UI
+	Disable options while logging
+	Disable graph while logging to file
+	Add another indicator that logging to file is taking place?
+---
+Add orientation change
+Settings dialog: skipping graph updates
 Disconnect app from sensors when paused
 Test app installation
 Need to implement the whole wake-lock thing from the post

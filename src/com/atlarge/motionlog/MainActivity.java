@@ -15,6 +15,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.support.v4.content.LocalBroadcastManager;
@@ -586,4 +587,10 @@ public class MainActivity extends Activity  implements OnItemSelectedListener, S
 	            return super.onOptionsItemSelected(item);
 	    }
 	}
+/*	
+	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+		// TODO: Nothing for now
+	}
+*/	
 }
