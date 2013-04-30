@@ -1,22 +1,11 @@
 package com.atlarge.motionlog;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
-
 import android.content.Context;
-import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.PointF;
-import android.graphics.PorterDuffXfermode;
-import android.graphics.drawable.Drawable;
-import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.View;
 
 public class GraphViewBitmap extends GraphViewBase {
 	protected final int SCROLL_VALUE = 2;

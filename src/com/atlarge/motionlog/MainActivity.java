@@ -1,46 +1,26 @@
 package com.atlarge.motionlog;
 
 import android.os.Bundle;
-import android.os.IBinder;
-import android.preference.PreferenceFragment;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.DialogFragment;
-import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
-import android.content.res.Configuration;
-import android.content.res.Resources;
-import android.content.res.TypedArray;
 import android.support.v4.content.LocalBroadcastManager;
-import android.text.Layout;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.MenuItem.OnMenuItemClickListener;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.PopupMenu;
-import android.widget.PopupWindow;
 import android.widget.Spinner;
-import android.widget.SpinnerAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
@@ -50,15 +30,10 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 
 
-@SuppressWarnings("unused")
 public class MainActivity extends Activity  implements 
-			OnItemSelectedListener, 
-			SensorEventListener, 
-			LogConfirmationDialogFragment.DialogListener, 
-			OnMenuItemClickListener, 
-			DialogInterface.OnClickListener, 
-			AdapterView.OnItemClickListener , 
-			PopupWindow.OnDismissListener
+			OnItemSelectedListener 
+			,SensorEventListener 
+			,LogConfirmationDialogFragment.DialogListener
 {
 	private boolean mSingleGraph = false;
     private AccelerometerLoggerService mService;
@@ -124,8 +99,6 @@ public class MainActivity extends Activity  implements
 	  			// Captured unknown intent
 				Log.d("MainActivity", "onReceive: unknown action");		
 	  		}
-//	  		String message = intent.getStringExtra("message");
-//	  		Log.d("receiver", "Got message: " + message);
 	  	}
 	};
 	
@@ -365,7 +338,6 @@ public class MainActivity extends Activity  implements
 		if (mSingleGraph) {
 			mGVs[0].clear();
 		} else {
-			DefaultColorIterator dci = new DefaultColorIterator();
 			for (int i=0; i<3; i++) { 
 				mGVs[i].clear();
 			}
@@ -424,8 +396,6 @@ public class MainActivity extends Activity  implements
 		} else {
 			Log.e("MainActivity", "Unknown source of on item selected"); 
 		}
-		
-		
 	}
 
 	@Override
@@ -434,12 +404,7 @@ public class MainActivity extends Activity  implements
 	}
 
 	private void updateButtonUI(boolean isLogging) {
-//		Button btn = (Button)findViewById(R.id.button_startstop);
-//		if (isLogging) {
-//			btn.setText("Stop");			
-//		} else {
-//			btn.setText("Start");			
-//		}
+		// Do nothing
 	}
 	
 	private void updateDelayUI(int sensorRate) {
@@ -510,48 +475,6 @@ public class MainActivity extends Activity  implements
 		showSettings();
 	}
 	
-	public void buttonLogTargetClick(View view) {
-//		IconicPopupMenu.showPopup(this, mLogTargetSpinnerAdapter, this);
-/*		
-		IconicPopupMenuListPopupWindow.showPopup(
-			this, 
-			new IconicAdapter(
-					this, 
-					R.array.capturetarget_string_ids,
-					R.array.capturetarget_icons,
-					R.layout.iconicspin_iconicstring,
-					R.layout.iconicspin_iconicstring,
-					R.id.iconicspin_text, 
-					R.id.iconicspin_icon 
-					),
-			findViewById(R.id.button_logtarget),
-			this, 
-			this
-			);
-*/			
-/*		
-		View sourceView = findViewById(R.id.button_logtarget);
-	    PopupMenu popup = new PopupMenu(this, sourceView);
-	    MenuInflater inflater = popup.getMenuInflater();
-	    inflater.inflate(R.menu.popup_sensordelay, popup.getMenu());
-	    popup.show();
-*/	    
-	}
-	
-	public boolean onMenuItemClick(MenuItem item) {
-	    switch (item.getItemId()) {
-	        case R.id.sensor_delay_slow:
-	            return true;
-	        case R.id.sensor_delay_medium:
-	        	return true;
-	        case R.id.sensor_delay_fast:
-	        	return true;
-	        case R.id.sensor_delay_vfast:
-	            return true;
-	        default:
-	            return false;
-	    }
-	}	
 /*	
 	@Override
 	public void onConfigurationChanged(Configuration newConfig) {
@@ -559,21 +482,4 @@ public class MainActivity extends Activity  implements
 	}
 */
 
-	@Override
-	public void onClick(DialogInterface dialog, int which) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void onDismiss() {
-		// TODO Auto-generated method stub
-		
-	}	
 }

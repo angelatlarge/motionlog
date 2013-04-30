@@ -1,5 +1,7 @@
 package com.atlarge.motionlog;
 
+/* This code is from Graphic Gems I, with minor adjustments by KS */
+
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;

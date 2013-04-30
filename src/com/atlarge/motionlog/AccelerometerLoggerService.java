@@ -2,24 +2,20 @@ package com.atlarge.motionlog;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
 import android.annotation.SuppressLint;
-import android.app.IntentService;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.os.Binder;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -32,7 +28,6 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
-@SuppressWarnings("unused")
 public class AccelerometerLoggerService extends Service implements SensorEventListener {
 	public static final int LOGTYPE_GRAPH = 1;
 	public static final int LOGTYPE_FILE = 2;
@@ -69,8 +64,6 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
     
-    private int mCounter = 0;
-	
 	// Handler that receives messages from the thread
 	@SuppressLint("HandlerLeak")
 	private final class ServiceHandler extends Handler {
@@ -118,7 +111,6 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		Log.d("AccelerometerLoggerService", "onStartCommand()");
-//		Toast.makeText(this, "Service starting", Toast.LENGTH_SHORT).show();
 
 		// Need to parse the intent for command
 		boolean forceNotifyFlag = false;
@@ -164,7 +156,6 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	@Override
 	public void onDestroy() {
 		Log.d("AccelerometerLoggerService", "onDestroy()");
-//		Toast.makeText(this, "service done", Toast.LENGTH_SHORT).show(); 
 	}
 	
     private boolean startLogging() {
@@ -174,7 +165,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 			// Logging to file as well
 		    String state = Environment.getExternalStorageState();
 		    if (!Environment.MEDIA_MOUNTED.equals(state)) {
-				Toast.makeText(this, "External storage unavailable: can't start log", Toast.LENGTH_SHORT).show();
+				Toast.makeText(this, getString(R.string.error_cannotcreatedir), Toast.LENGTH_SHORT).show();
 		        stopSelf();
 		        return false;
 		    } // else: we know the external storage is available
@@ -184,7 +175,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 		    if (!logDir.exists()) {
 		        if (!logDir.mkdirs()) {
 		        	// Trouble creating directory
-					Toast.makeText(this, "Cannot create app directory", Toast.LENGTH_SHORT).show();
+					Toast.makeText(this, getString(R.string.error_cannotcreatedir), Toast.LENGTH_SHORT).show();
 			        return false;
 		        }
 		    }
@@ -197,7 +188,13 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	        try {
 	        	logOutputStream = new FileOutputStream(logFile);
 		        logWriter = new PrintWriter(logOutputStream);
-		        logWriter.println("Time (ns)\tX-axis\tY-axis\tZ-axis");
+		        logWriter.format(
+		        	"%s\t%s\t%s\t%s\t%s\n", 
+		        	getString(R.string.label_time), 
+		        	getString(R.string.label_x_axis), 
+		        	getString(R.string.label_y_axis), 
+		        	getString(R.string.label_z_axis)
+		        );
 	        } catch (Exception e) {
 	            e.printStackTrace();
 				return false;
@@ -282,9 +279,8 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 		NotificationCompat.Builder mBuilder =
 			    new NotificationCompat.Builder(this)
 			    .setSmallIcon(R.drawable.ic_stat_notify_logging)
-			    .setContentTitle("Motionlog logging")
-//			    .setContentTitle("")
-			    .setContentText("select to adjust")
+			    .setContentTitle(getString(R.string.notification_title))
+			    .setContentText(getString(R.string.notification_text))
 			    .setOngoing (true);
 		
 		Intent resultIntent = new Intent(this, MainActivity.class);

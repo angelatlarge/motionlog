@@ -23,7 +23,7 @@
             android:id="@+id/spinnerCaptureType"
             android:layout_width="45dp"
             android:layout_height="wrap_content"
-            style="@android:style/Widget.Holo.Light.Button.Small"            
+            style="@android:style/Widget.Holo.Light.Button"            
         />
 
         <Spinner
@@ -32,7 +32,7 @@
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
             android:layout_toRightOf="@+id/spinnerCaptureType" 
-            style="@android:style/Widget.Holo.Light.Button.Small"            
+            style="@android:style/Widget.Holo.Light.Button"            
         />
 
 	    <ImageButton
@@ -50,7 +50,6 @@
             android:layout_height="wrap_content"
             android:layout_alignParentRight="true"
         	android:onClick="startStopButtonClick"
-            android:text="ToggleButton" 
         />
     </RelativeLayout>
 

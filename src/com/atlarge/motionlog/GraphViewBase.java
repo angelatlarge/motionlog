@@ -1,34 +1,24 @@
 package com.atlarge.motionlog;
 
 import android.content.Context;
-import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.PointF;
-import android.graphics.PorterDuffXfermode;
-import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 
-/**
- * TODO: document your custom view class.
- */
 public class GraphViewBase extends View {
 	protected final int DEFAULT_GRAPH_COUNT	= 2;
 	protected final float DEFAULT_GRID = 25;
 	protected int mGraphCount = DEFAULT_GRAPH_COUNT;
-	protected String mExampleString = "Example string"; // TODO: use a default from R.string...
-	protected int mExampleColor = Color.RED; // TODO: use a default from
-											// R.color...
+	
 	protected Paint mGridPaint;
 	protected Paint mBorderPaint;
 	protected Paint mCenterPaint;
 	protected Paint[] mGraphPaints;
-	protected float mExampleDimension = 0; // TODO: use a default from R.dimen...
 
 	protected Canvas mGridCanvas;
 	protected Bitmap mGridBitmap;
@@ -64,26 +54,8 @@ public class GraphViewBase extends View {
 
 	protected void init(AttributeSet attrs, int defStyle) {
 		// Load attributes
-		final TypedArray a = getContext().obtainStyledAttributes(attrs, R.styleable.GraphView, defStyle, 0);
-
-		//~ mExampleString = a.getString(R.styleable.GraphView_exampleString);
-		//~ if (mExampleString==null)
-			//~ mExampleString = "Test string";
-		//~ mExampleColor = a.getColor(R.styleable.GraphView_exampleColor,
-				//~ mExampleColor);
-//		if (mExampleColor==null)
-//			mExampleColor = Color.BLACK;
-		// Use getDimensionPixelSize or getDimensionPixelOffset when dealing
-		// with
-		// values that should fall on pixel boundaries.
-		//~ mExampleDimension = a.getDimension(R.styleable.GraphView_exampleDimension, mExampleDimension);
-
-//		if (a.hasValue(R.styleable.GraphView_exampleDrawable)) {
-//			mExampleDrawable = a.getDrawable(R.styleable.GraphView_exampleDrawable);
-//			mExampleDrawable.setCallback(this);
-//		}
-
-		a.recycle();
+//		final TypedArray a = getContext().obtainStyledAttributes(attrs, R.styleable.GraphView, defStyle, 0);
+//		a.recycle();
 
 		// Set up a default TextPaint object
 		mGridLabelPaint = new TextPaint();
@@ -106,8 +78,6 @@ public class GraphViewBase extends View {
 		mCenterPaint.setARGB (0xFF,0x80,0x80,0x80);
 		mCenterPaint.setStyle(Paint.Style.STROKE);
 		mCenterPaint.setStrokeWidth(1);
-		// Update TextPaint and text measurements from attributes
-		//~ invalidateTextPaintAndMeasurements();
 		
 		// Create the paint for the readings
 		recreateReadingPaints();
@@ -117,15 +87,6 @@ public class GraphViewBase extends View {
 
 	}
 
-/*	
-	private void invalidateTextPaintAndMeasurements() {
-		mTextPaint.setColor(mExampleColor);
-		mTextWidth = mTextPaint.measureText(mExampleString);
-
-		Paint.FontMetrics fontMetrics = mTextPaint.getFontMetrics();
-		mTextHeight = fontMetrics.bottom;
-	}
-*/	
 	protected void recreateReadingPaints() {
 		mGraphPaints = new Paint[mGraphCount];
 		for (int i=0; i<mGraphCount; i++) {
@@ -223,7 +184,6 @@ public class GraphViewBase extends View {
 		while (y[0]>=0) {		// Positive y is down
 			// Draw the tick labels
 			StringBuilder sb = new StringBuilder(String.format("%+." + ((Integer)(mGridLegendDecimals)).toString() + "f", logicalLabel));
-//					Float.toString(logicalLabel));
 			canvas.drawText(sb.toString(), GRIDLABEL_SIZE/2, y[0]+fontMetrics.bottom, mGridLabelPaint);
 			sb.setCharAt(0, '-');
 			canvas.drawText(sb.toString(), GRIDLABEL_SIZE/2, y[1]+fontMetrics.bottom, mGridLabelPaint);
@@ -231,13 +191,6 @@ public class GraphViewBase extends View {
 			y[1] += mGridScreenWidth*2;		
 			logicalLabel += mGridLogicalSize*2;
 		}
-		
-		
-		
-		/*		
-		mTextWidth = mTextPaint.measureText(mExampleString);
-
-*/	
 	}
 	
 	@Override
@@ -245,21 +198,11 @@ public class GraphViewBase extends View {
 		super.onDraw(canvas);
 		Log.d("GraphViewBase", "draw()");  
 
+		// Draw the grid from off-screen bitmap
 		ensureGridExists();
 		canvas.drawBitmap(mGridBitmap, 0, 0, null);
-//		drawGrid(canvas);
 		
 	}
-
-	/**
-	 * Gets the example string attribute value.
-	 * 
-	 * @return The example string attribute value.
-	 */
-	public String getExampleString() {
-		return mExampleString;
-	}
-
 
 	public void setMaxRange(int readingIndex, float maxRange) {
 		if (readingIndex==0)

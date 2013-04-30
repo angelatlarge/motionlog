@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+	<PreferenceCategory 
+        android:title="@string/prefs_maintitle"
+        android:key="pref_key_main"
+	>
+
+		<CheckBoxPreference
+			android:key="pref_logwarning"
+			android:title="@string/prefs_title_logwarn"
+			android:summary="@string/prefs_summary_logwarn"
+			android:defaultValue="true" 
+		/>
+	
+	</PreferenceCategory>
+	
+</PreferenceScreen>

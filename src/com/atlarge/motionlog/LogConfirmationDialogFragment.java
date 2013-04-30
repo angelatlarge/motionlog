@@ -7,13 +7,9 @@ import android.app.DialogFragment;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.CheckBox;
-import android.widget.FrameLayout;
-//import android.widget.FrameLayout.LayoutParams;
-import android.view.ViewGroup.LayoutParams;
 
 public class LogConfirmationDialogFragment extends DialogFragment {
     /* The activity that creates an instance of this dialog fragment must

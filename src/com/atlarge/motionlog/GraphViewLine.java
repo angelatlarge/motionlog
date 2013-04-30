@@ -5,7 +5,6 @@ import java.util.LinkedList;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.PointF;
 import android.util.AttributeSet;
 import android.util.Log;
 
@@ -52,9 +51,7 @@ public class GraphViewLine extends GraphViewBase {
 	
 	protected void init(AttributeSet attrs, int defStyle) {
 		super.init(attrs, defStyle);
-		
 		mDatapoints = new LinkedList<Datapoint>();
-		
 	}
 
 	
@@ -84,25 +81,11 @@ public class GraphViewLine extends GraphViewBase {
 		}
 	}
 
-	/**
-	 * Gets the example string attribute value.
-	 * 
-	 * @return The example string attribute value.
-	 */
-	public String getExampleString() {
-		return mExampleString;
-	}
-
 	public void addReading(int readingIndex, float readingValue, long timestamp) {
 		// Deal with the data
 		Log.d("GraphViewLine", String.format("Adding datapoint %f %d", readingValue, timestamp/1000));
 		mDatapoints.add(new Datapoint(readingIndex, readingValue, timestamp/1000));
-//		while ((timestamp - mDatapoints.peek().mTimestamp) * mScaleX > mWidth) {
-//			mDatapoints.removeFirst();
-//		}
-		
 		invalidate();
-		
 	}
 	
 }

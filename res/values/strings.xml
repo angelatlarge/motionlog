@@ -3,11 +3,9 @@
 
     <string name="app_name">Motionlog</string>
     <string name="action_settings">Settings</string>
-    <string name="hello_world">Hello world!</string>
     <string name="button_start">Start</string>
     <string name="button_stop">Stop</string>
     <string name="local_service_started">local_service_started</string>
-    <string name="notification_running_title">Motion Log Running</string>
     <string name="proceed">Proceed</string>
     <string name="cancel">Cancel</string>
     <string name="donotaskagain">Do not ask again</string>
@@ -21,11 +19,22 @@
 	<string name="menu_CAPTURETARGET_FILE">Capture as file</string>
 	<string name="menu_CAPTURETARGET_BOTH">Capture both</string>
     <string-array name="sensor_axis_names">
-        <item>X axis</item>
-        <item>Y axis</item>
-        <item>Z axis</item>
+        <item>@string/label_x_axis</item>
+        <item>@string/label_y_axis</item>
+        <item>@string/label_z_axis</item>
     </string-array>
 	<string name="prefs_maintitle">Preferences</string>
 	<string name="prefs_title_logwarn">Battery warning</string>
 	<string name="prefs_summary_logwarn">Prompt when starting a potentially battery-killing logging activity</string>
+	
+	<string name="notification_title">Motionlog logging</string>
+	<string name="notification_text">touch to adjust</string>
+	<string name="label_time">Time (ns)</string>
+	<string name="label_x_axis">X axis</string>
+	<string name="label_y_axis">Y axis</string>
+	<string name="label_z_axis">Z axis</string>
+	<string name="error_cannotcreatedir">External storage unavailable: can\'t start log</string>
+	<string name="error_noexternalstorage">Cannot create app directory: can\'t start log</string>
+	
+	
 </resources>

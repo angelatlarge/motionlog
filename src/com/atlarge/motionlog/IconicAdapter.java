@@ -14,7 +14,6 @@ public class IconicAdapter extends android.widget.BaseAdapter implements Spinner
 	private final int stringArrayResourceID;
 	private final TypedArray stringIds;
 	private final TypedArray icons;
-//		private final int textViewResourceId;
 	private final int viewBasicRowResourceID;
 	private final int viewDroppedRowResourceID;
 	private final Context context;
@@ -24,7 +23,6 @@ public class IconicAdapter extends android.widget.BaseAdapter implements Spinner
 
 	public IconicAdapter(
 			Context _context, 
-//				int _textViewResourceId, 
 			int _stringArrayResourceID,
 			int _iconArrayResourceID, 
 			int _viewBasicRowResourceID, 
@@ -34,7 +32,6 @@ public class IconicAdapter extends android.widget.BaseAdapter implements Spinner
 			) {
 		super();
 		context = _context;
-//			textViewResourceId = _textViewResourceId;
 		viewBasicRowResourceID = _viewBasicRowResourceID;
 		viewDroppedRowResourceID = _viewDroppedRowResourceID;
 		stringArrayResourceID = _stringArrayResourceID;
