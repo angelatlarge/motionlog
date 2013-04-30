@@ -19,11 +19,19 @@ import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.graphics.RectF;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -44,6 +52,7 @@ public class MainActivity extends Activity  implements
 	private TextView[] mGVlabels = null;
 	private static final boolean LOGCONFIRMATIONPROMPT_DEFAULT = true;
 	private boolean mLogConfirmationPrompt = LOGCONFIRMATIONPROMPT_DEFAULT;
+	private Bitmap mFileLoggingBitmap = null;
 	int counter = 0;
 	IconicAdapter mSpeedSpinnerAdapter;
 	IconicAdapter mLogTargetSpinnerAdapter;
@@ -405,6 +414,67 @@ public class MainActivity extends Activity  implements
 		// TODO Auto-generated method stub
 	}
 
+	private void setGVvisibility(int visibility) {
+		for (int i=0; i<mGVs.length; i++) {
+			if (mGVs[i] != null)
+				mGVs[i].setVisibility(visibility);
+			if (mGVlabels != null)
+				if (mGVlabels[i] != null) 
+					mGVlabels[i].setVisibility(visibility);
+			
+		}
+	}
+	
+	private void ensureFileLoggingImageSet() {
+		final int IMAGE_SIZE = 100; 
+		final float ARROW_WINGTOP 		= 0.6f;
+		final float ARROW_MIDDLE	 	= 0.5f;
+		final float ARROW_WINGEXT 		= 0.3f;
+		final float ARROW_WINGLEFT 		= ARROW_MIDDLE-ARROW_WINGEXT;
+		final float ARROW_WINGRIGHT 	= ARROW_MIDDLE+ARROW_WINGEXT;
+		final float ARROW_TIPY 			= 0.9f;
+		final float ARROW_BODYEXT 		= 0.2f;
+		final float ARROW_BODYLEFT 		= ARROW_MIDDLE-ARROW_BODYEXT;
+		final float ARROW_BODYRIGHT 	= ARROW_MIDDLE+ARROW_BODYEXT;
+		final float ARROW_BODYTOP 		= 0.15f;
+		
+		if (mFileLoggingBitmap != null) 
+			return;
+		
+		// Initialize the bitmap and canvas
+		ImageView iv = (ImageView)findViewById(R.id.logging_to_file_image);
+		mFileLoggingBitmap = Bitmap.createBitmap(IMAGE_SIZE, IMAGE_SIZE, Bitmap.Config.ARGB_8888);
+		mFileLoggingBitmap.eraseColor(Color.TRANSPARENT);
+		Canvas canvas = new Canvas();
+		canvas.setBitmap(mFileLoggingBitmap);
+
+		// Draw the circle
+		Paint paint = new Paint();
+		paint.setARGB (0x20, 0xFF, 0xFF, 0xFF);
+		paint.setStyle(Paint.Style.FILL);
+		paint.setAntiAlias(true);
+		canvas.drawOval(new RectF(0, 0, IMAGE_SIZE-1, IMAGE_SIZE-1), paint);
+		
+		// Draw the arrow using transparent paint
+		paint = new Paint();
+		paint.setXfermode(new android.graphics.PorterDuffXfermode(PorterDuff.Mode.CLEAR)); 
+		paint.setAntiAlias(true);
+		Path path = new Path();
+		path.moveTo(IMAGE_SIZE*ARROW_MIDDLE, 	IMAGE_SIZE*ARROW_TIPY);
+		path.lineTo(IMAGE_SIZE*ARROW_WINGRIGHT, IMAGE_SIZE*ARROW_WINGTOP); 	// Right wing
+		path.lineTo(IMAGE_SIZE*ARROW_BODYRIGHT,	IMAGE_SIZE*ARROW_WINGTOP);	// Right wing armpit
+		path.lineTo(IMAGE_SIZE*ARROW_BODYRIGHT,	IMAGE_SIZE*ARROW_BODYTOP);	// Top of the base, right
+		path.lineTo(IMAGE_SIZE*ARROW_BODYLEFT,	IMAGE_SIZE*ARROW_BODYTOP);	// Top of the base, left
+		path.lineTo(IMAGE_SIZE*ARROW_BODYLEFT,	IMAGE_SIZE*ARROW_WINGTOP);	// Left armpit
+		path.lineTo(IMAGE_SIZE*ARROW_WINGLEFT, IMAGE_SIZE*ARROW_WINGTOP);	// Left wing
+		path.close();
+		canvas.drawPath(path, paint);
+		
+		// Set the image view image
+		iv.setImageBitmap(mFileLoggingBitmap);
+		
+	}
+	
 	private void updateUI() {
 		Spinner spinner = (Spinner) findViewById(R.id.spinner_updatefrequency);
 		if (spinner != null) {
@@ -417,19 +487,20 @@ public class MainActivity extends Activity  implements
 		    }
 			spinner.setEnabled(!mIsLogging);
 		}
+		
+		LinearLayout llf = (LinearLayout)findViewById(R.id.layout_logging_to_file);
+		if  (((mLogTargetType & AccelerometerLoggerService.LOGTYPE_GRAPH) > 0 ) | (!mIsLogging)) {
+			llf.setVisibility(View.GONE);
+			setGVvisibility(View.VISIBLE);
+		} else {
+			ensureFileLoggingImageSet();
+			setGVvisibility(View.GONE);
+			llf.setVisibility(View.VISIBLE);
+		}
+		
 		spinner = (Spinner) findViewById(R.id.spinnerCaptureType);
 		if (spinner != null)
 			spinner.setEnabled(!mIsLogging);
-		for (int i=0; i<mGVs.length; i++) {
-			int visible = ((mLogTargetType & AccelerometerLoggerService.LOGTYPE_GRAPH) > 0 ) | (!mIsLogging) ? View.VISIBLE : View.INVISIBLE;
-			if (mGVs[i] != null)
-				mGVs[i].setVisibility(visible);
-			if (mGVlabels != null)
-				if (mGVlabels[i] != null) 
-					mGVlabels[i].setVisibility(visible);
-			
-		}
-		
 	}
 	
 	@Override
@@ -497,3 +568,4 @@ public class MainActivity extends Activity  implements
 */
 
 }
+ 

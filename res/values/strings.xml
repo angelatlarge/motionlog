@@ -35,6 +35,7 @@
 	<string name="label_z_axis">Z axis</string>
 	<string name="error_cannotcreatedir">External storage unavailable: can\'t start log</string>
 	<string name="error_noexternalstorage">Cannot create app directory: can\'t start log</string>
+	<string name="label_capturing_to_file">Capturing to data file...</string>
 	
 	
 </resources>
