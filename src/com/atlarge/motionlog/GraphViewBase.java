@@ -93,7 +93,7 @@ public class GraphViewBase extends View {
 			mGraphPaints[i] = new Paint();
 			mGraphPaints[i].setStyle(Paint.Style.STROKE);
 			mGraphPaints[i].setStrokeWidth(1);
-			mGraphPaints[i].setAntiAlias(true);
+//			mGraphPaints[i].setAntiAlias(true);
 		}		
 		generateDefaultGraphColors();
 	}

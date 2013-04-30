@@ -41,6 +41,7 @@ public class MainActivity extends Activity  implements
 	private int mSensorUpdateSpeed = AccelerometerLoggerService.DEFAULT_SENSOR_RATE;
 	private int mLogTargetType = AccelerometerLoggerService.LOGTYPE_GRAPH;
 	private GraphViewBase[] mGVs = null;
+	private TextView[] mGVlabels = null;
 	private static final boolean LOGCONFIRMATIONPROMPT_DEFAULT = true;
 	private boolean mLogConfirmationPrompt = LOGCONFIRMATIONPROMPT_DEFAULT;
 	int counter = 0;
@@ -73,21 +74,19 @@ public class MainActivity extends Activity  implements
 			// Process the intent action
 	  		if (intent.getAction().equals(AccelerometerLoggerService.ACTION_STATUS_LOGGING)) {
 				Log.d("MainActivity", "onReceive: ACTION_STATUS_LOGGING");		
-	  			updateButtonUI(true);
-				int sensorRate = AccelerometerLoggerService.DEFAULT_SENSOR_RATE;
 				if(extras != null) {
-					sensorRate = extras.getInt(AccelerometerLoggerService.INTENTEXTRA_UPDATERATE, AccelerometerLoggerService.DEFAULT_SENSOR_RATE);
+					mSensorUpdateSpeed = extras.getInt(AccelerometerLoggerService.INTENTEXTRA_UPDATERATE, AccelerometerLoggerService.DEFAULT_SENSOR_RATE);
 				}
-				updateDelayUI(sensorRate);
 		  		mIsLogging = true;
 				if (forceNotifyFlag)
 					Toast.makeText(MainActivity.this, "Logging started", Toast.LENGTH_SHORT).show();	 	    	
+				updateUI();
 	  		} else if (intent.getAction().equals(AccelerometerLoggerService.ACTION_STATUS_NOTLOGGING)) {
 				Log.d("MainActivity", "onReceive: ACTION_STATUS_NOTLOGGING");		
-	  			updateButtonUI(false);
 		  		mIsLogging = false;
 				if (forceNotifyFlag)
 					Toast.makeText(MainActivity.this, "Logging stopped", Toast.LENGTH_SHORT).show();	 	    	
+				updateUI();
 	  		} else if (intent.getAction().equals(AccelerometerLoggerService.ACTION_SENSORCHANGED)) {
 				Log.d("MainActivity", "onReceive: ACTION_SENSORCHANGED");		
 				if(extras != null) {
@@ -179,8 +178,10 @@ public class MainActivity extends Activity  implements
 		String[] axisNames = null;
 		if (mSingleGraph) {
 			mGVs = new GraphViewBitmap[1];
+			mGVlabels = null;
 		} else {
 			mGVs = new GraphViewBitmap[3];
+			mGVlabels = new TextView[3];
 			axisNames = getResources().getStringArray(R.array.sensor_axis_names);
 		}
 		int layoutIndex = 1;
@@ -199,11 +200,11 @@ public class MainActivity extends Activity  implements
 			mGVs[i].setLayoutParams(lp);
 			mGVs[i].setBackgroundColor(0xFF000000);
 			if (!mSingleGraph) {
-				TextView tv = new TextView(this);
-				tv.setTextSize(12);
-				tv.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
-				tv.setText(axisNames[i]);
-				layout.addView(tv, layoutIndex++);
+				mGVlabels[i] = new TextView(this);
+				mGVlabels[i].setTextSize(12);
+				mGVlabels[i].setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+				mGVlabels[i].setText(axisNames[i]);
+				layout.addView(mGVlabels[i], layoutIndex++);
 				
 				mGVs[i].setGraphCount(1);
 				mGVs[i].setMaxRange(0, maxRange);
@@ -371,6 +372,7 @@ public class MainActivity extends Activity  implements
 		} else {
 			Log.d("MainActivity", "Issued stop logging command successfully");
 		}
+		updateUI();
 	}
 	
 	@Override
@@ -403,19 +405,31 @@ public class MainActivity extends Activity  implements
 		// TODO Auto-generated method stub
 	}
 
-	private void updateButtonUI(boolean isLogging) {
-		// Do nothing
-	}
-	
-	private void updateDelayUI(int sensorRate) {
+	private void updateUI() {
 		Spinner spinner = (Spinner) findViewById(R.id.spinner_updatefrequency);
-	    switch (sensorRate) {
-	    case SensorManager.SENSOR_DELAY_NORMAL : spinner.setSelection(0); break;
-	    case SensorManager.SENSOR_DELAY_UI : spinner.setSelection(1); break;
-	    case SensorManager.SENSOR_DELAY_GAME : spinner.setSelection(2); break;
-	    case SensorManager.SENSOR_DELAY_FASTEST : spinner.setSelection(3); break;
-	    default: spinner.setSelection(0); break;
-	    }
+		if (spinner != null) {
+		    switch (mSensorUpdateSpeed) {
+			    case SensorManager.SENSOR_DELAY_NORMAL : spinner.setSelection(0); break;
+			    case SensorManager.SENSOR_DELAY_UI : spinner.setSelection(1); break;
+			    case SensorManager.SENSOR_DELAY_GAME : spinner.setSelection(2); break;
+			    case SensorManager.SENSOR_DELAY_FASTEST : spinner.setSelection(3); break;
+			    default: spinner.setSelection(0); break;
+		    }
+			spinner.setEnabled(!mIsLogging);
+		}
+		spinner = (Spinner) findViewById(R.id.spinnerCaptureType);
+		if (spinner != null)
+			spinner.setEnabled(!mIsLogging);
+		for (int i=0; i<mGVs.length; i++) {
+			int visible = ((mLogTargetType & AccelerometerLoggerService.LOGTYPE_GRAPH) > 0 ) | (!mIsLogging) ? View.VISIBLE : View.INVISIBLE;
+			if (mGVs[i] != null)
+				mGVs[i].setVisibility(visible);
+			if (mGVlabels != null)
+				if (mGVlabels[i] != null) 
+					mGVlabels[i].setVisibility(visible);
+			
+		}
+		
 	}
 	
 	@Override

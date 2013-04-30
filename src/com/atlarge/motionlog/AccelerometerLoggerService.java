@@ -58,7 +58,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	private boolean logging = false;
     private File logFile;
 	private FileOutputStream logOutputStream;
-	private PrintWriter logWriter;
+	private PrintWriter logWriter;				// Using this as a flag for whether to log to file
 	private int mSensorRate = DEFAULT_SENSOR_RATE;
 	private int mLoggingType = DEFAULT_LOGTYPE;
     private SensorManager mSensorManager;
@@ -125,10 +125,10 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 			case INTENTCOMMAND_STARTLOGGING:
 				Log.d("AccelerometerLoggerService", "INTENTCOMMAND_STARTLOGGING command received");
 				// Pull out the update rate from the intent
-				Log.d("AccelerometerLoggerService", String.format("Old sensor rate: %d, ", mSensorRate));
                 mSensorRate = extras.getInt(INTENTEXTRA_UPDATERATE, DEFAULT_SENSOR_RATE);
-				Log.d("AccelerometerLoggerService", String.format("new sensor rate: %d\n", mSensorRate));
+				Log.d("AccelerometerLoggerService", String.format("Old sensor rate: %d, ", mSensorRate));
 				mLoggingType = extras.getInt(INTENTEXTRA_LOGGINGTYPE, DEFAULT_LOGTYPE);
+				Log.d("AccelerometerLoggerService", String.format("new logging type: %d\n", mLoggingType));
 				startLogging();
 				break;
 			case INTENTCOMMAND_STOPLOGGING:
@@ -189,7 +189,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	        	logOutputStream = new FileOutputStream(logFile);
 		        logWriter = new PrintWriter(logOutputStream);
 		        logWriter.format(
-		        	"%s\t%s\t%s\t%s\t%s\n", 
+		        	"%s\t%s\t%s\t%s\n", 
 		        	getString(R.string.label_time), 
 		        	getString(R.string.label_x_axis), 
 		        	getString(R.string.label_y_axis), 
@@ -199,7 +199,11 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	            e.printStackTrace();
 				return false;
 	        }    
-		} // Logging to file
+		} else {
+			// Not logging to file
+			logWriter = null;
+			logOutputStream = null;
+		}
 		
 		// Here we know logging is going to start
 		logging = true;
@@ -216,13 +220,13 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
     }
 
     private void stopLogging() {
-		//* TODO: Would like to close the files when logging stops, 
-		//			although as currently written, new file will be created every time the logging starts
     	if (mSensorManager != null) {
 			mSensorManager.unregisterListener(this);
     	}
 		notificationEnd();
 		logging = false;
+		logWriter = null;
+		logOutputStream = null;
 		// Updating activities performStatusUpdate() will be called elsewhere
     }
     
@@ -253,7 +257,8 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 //		if (++mCounter % 50 == 0) {
 			Log.v("AccelerometerLoggerService", "onSensorChanged");
 	        try {
-	    		if ((mLoggingType & LOGTYPE_FILE) > 0) {
+	        	if (logWriter != null) {
+//	    		if ((mLoggingType & LOGTYPE_FILE) > 0) {
 	    			Log.v("AccelerometerLoggerService", "saving to file");
 		        	logWriter.print(event.timestamp);
 		        	for (int i=0;i<event.values.length;i++)

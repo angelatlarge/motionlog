@@ -1,16 +1,15 @@
-Circular border on sensor delay icon
-Hook up the preference logging confirmation with the logging confirmation
+Disable UI
+	Disable options while logging
+	Disable graph while logging to file
+	Add another indicator that logging to file is taking place?
 Test the app - logging
 Make the menu icons semi-transparent
 Make sure that the service is killed when app is paused/killed when logging to screen only
 Make sure that the right things happen when app is restored
 Make an installation
-Remove text preceding the options icons
 Add a text view showing statistics
-Disable UI
-	Disable options while logging
-	Disable graph while logging to file
-	Add another indicator that logging to file is taking place?
+Circular border on sensor delay icon?
+	
 ---
 Add orientation change
 Settings dialog: skipping graph updates
@@ -18,3 +17,4 @@ Disconnect app from sensors when paused
 Test app installation
 Need to implement the whole wake-lock thing from the post
 Need to look at the accelerometer lecture
+Add push on axis to show where axis is
