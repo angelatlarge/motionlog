@@ -76,7 +76,7 @@ public class MainActivity extends Activity  implements
 	  	@Override
 	  	public void onReceive(Context context, Intent intent) {
 	  		// Get extra data included in the Intent
-			Log.d("MainActivity", "onReceive");		
+			//~ Log.d("MainActivity", "onReceive");		
 			Bundle extras = intent.getExtras();
 			StatusUpdatePacket wassup = null;
 			// Get the notification flag
@@ -120,7 +120,7 @@ public class MainActivity extends Activity  implements
 				}	  			
 	  		} else if (intent.getAction().equals(AccelerometerLoggerService.ACTION_STATISTICS)) {
 	  			// Do nothing, we will process the update packet anyway
-				Log.d("MainActivity", "onReceive: ACTION_STATISTICS");		
+				//~ Log.d("MainActivity", "onReceive: ACTION_STATISTICS");		
 	  		} else {
 	  			// Captured unknown intent
 				Log.d("MainActivity", "onReceive: unknown action");		
@@ -588,7 +588,7 @@ public class MainActivity extends Activity  implements
 	}
 
 	private void updateLoggingStatus(StatusUpdatePacket wassup) {
-		Log.d("MainActivity", "updateLoggingStatus()");
+		//~ Log.d("MainActivity", "updateLoggingStatus()");
 		StringBuilder sb = new StringBuilder();
 		TextView tv = (TextView)findViewById(R.id.logging_to_file_textstatistics);
 		
