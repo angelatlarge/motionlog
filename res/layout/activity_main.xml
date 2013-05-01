@@ -43,7 +43,18 @@
             android:layout_toRightOf="@+id/spinner_updatefrequency" 
         	android:onClick="buttonsettings_click"
 	    />
-        
+	    
+        <TextView
+	        android:id="@+id/logging_to_file_toptextnotice"
+		    android:layout_width="fill_parent"
+		    android:layout_height="wrap_content"
+		    android:text=""
+		    android:textSize="10sp"
+            android:layout_toRightOf="@+id/button_settings" 
+            android:layout_toLeftOf="@+id/button_startstop" 
+ 			android:gravity="center"            
+		/>
+	    
         <ToggleButton
             android:id="@+id/button_startstop"
             android:layout_width="wrap_content"
@@ -67,7 +78,7 @@
 		    android:layout_height="wrap_content"
 		/>
         <TextView
-	        android:id="@+id/logging_to_file_textnotice"
+	        android:id="@+id/logging_to_file_centertextnotice"
 		    android:layout_width="wrap_content"
 		    android:layout_height="wrap_content"
 		    android:text="@string/label_capturing_to_file"

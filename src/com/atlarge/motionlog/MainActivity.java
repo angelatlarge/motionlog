@@ -12,6 +12,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+import android.util.SparseIntArray;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -36,6 +37,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import java.util.HashMap;
 
 
 public class MainActivity extends Activity  implements 
@@ -60,6 +62,14 @@ public class MainActivity extends Activity  implements
 	private StringResourceMapper mLogTargetSpinnerMapping;
 	private int mSensorEventsCounter;
 	private String mLogFilename = null;
+	
+	private static final int STATUSSTRINGIDX_FILENAME = 0; 
+	private static final int STATUSSTRINGIDX_EVENTS = 1; 
+	private static final int STATUSSTRINGIDX_RATETOTAL = 2; 
+	private static final int STATUSSTRINGIDX_RATELATEST = 3; 
+	private HashMap<Integer,String> mStatsStrings;
+	private TextView mStatsTextView;
+
 
 	/********************************************************************/
 /*	
@@ -127,7 +137,7 @@ public class MainActivity extends Activity  implements
 	  		}
 	  		
 	  		if (wassup!= null) {
-	  			updateLoggingStatus(wassup);
+	  			updateLoggingStatistics(wassup);
 	  		}
 	  	}
 	};
@@ -521,13 +531,37 @@ public class MainActivity extends Activity  implements
 			ensureFileLoggingImageSet();
 			setGVvisibility(View.GONE);
 			llf.setVisibility(View.VISIBLE);
-			updateLoggingStatus(null);			
 		}
 		
 		spinner = (Spinner) findViewById(R.id.spinnerCaptureType);
 		if (spinner != null)
 			spinner.setEnabled(!mIsLogging);
 		
+		// Prepare for status updates
+		mStatsStrings = null;
+		mStatsTextView = null;
+		if (mIsLogging) {
+			if ((mLogTargetType & AccelerometerLoggerService.LOGTYPE_FILE) > 0 ) {
+				// Logging at least in part to file
+				mStatsStrings = new HashMap<Integer, String>();
+				if (mLogTargetType == AccelerometerLoggerService.LOGTYPE_FILE) {
+					// Logging to file only, longer strings
+					mStatsStrings.put(STATUSSTRINGIDX_FILENAME, getString(R.string.label_statistics_filename_long_T));
+					mStatsStrings.put(STATUSSTRINGIDX_EVENTS, getString(R.string.label_statistics_eventscount_long_T));
+					mStatsStrings.put(STATUSSTRINGIDX_RATETOTAL, getString(R.string.label_statistics_totalrate_long_T));
+					mStatsStrings.put(STATUSSTRINGIDX_RATELATEST, getString(R.string.label_statistics_latestrate_long_T));
+					mStatsTextView = (TextView)findViewById(R.id.logging_to_file_textstatistics);
+				} else {
+					// Logging to file and screen, short strings					
+					mStatsStrings.put(STATUSSTRINGIDX_FILENAME, getString(R.string.label_statistics_filename_short_T));
+					mStatsStrings.put(STATUSSTRINGIDX_EVENTS, getString(R.string.label_statistics_eventscount_short_T));
+					mStatsStrings.put(STATUSSTRINGIDX_RATETOTAL, getString(R.string.label_statistics_totalrate_short_T));
+					mStatsStrings.put(STATUSSTRINGIDX_RATELATEST, getString(R.string.label_statistics_latestrate_short_T));
+					mStatsTextView = (TextView)findViewById(R.id.logging_to_file_toptextnotice);
+				}
+				updateLoggingStatistics(null);			
+			}
+		}	
 	}
 	
 	@Override
@@ -587,23 +621,29 @@ public class MainActivity extends Activity  implements
 		showSettings();
 	}
 
-	private void updateLoggingStatus(StatusUpdatePacket wassup) {
-		//~ Log.d("MainActivity", "updateLoggingStatus()");
+	private void updateLoggingStatistics(StatusUpdatePacket wassup) {
+		Log.d("MainActivity", "updateLoggingStatus()");
 		StringBuilder sb = new StringBuilder();
-		TextView tv = (TextView)findViewById(R.id.logging_to_file_textstatistics);
 		
-		if ( (mLogFilename != null) && (mLogFilename.length() > 0)) {
-			sb.append(String.format(getString(R.string.label_statistics_filename_T), mLogFilename));
+		if ( (mStatsTextView != null) && (mStatsStrings != null) ) {
+			if ((mLogFilename != null) && (mLogFilename.length() > 0) && mStatsStrings.containsKey(STATUSSTRINGIDX_FILENAME)) {
+				if (sb.length()>0) sb.append("\n");
+				sb.append(String.format(mStatsStrings.get(STATUSSTRINGIDX_FILENAME), mLogFilename));
+			}
+			if ((wassup!=null) && mStatsStrings.containsKey(STATUSSTRINGIDX_EVENTS)) {
+				if (sb.length()>0) sb.append("\n");
+				sb.append(String.format(mStatsStrings.get(STATUSSTRINGIDX_EVENTS), wassup.eventsCount()));
+			}
+			if ((wassup!=null) && mStatsStrings.containsKey(STATUSSTRINGIDX_RATETOTAL)) {
+				if (sb.length()>0) sb.append("\n");
+				sb.append(String.format(mStatsStrings.get(STATUSSTRINGIDX_RATETOTAL), wassup.totalEventsRate()));
+			}
+			if ((wassup!=null) && mStatsStrings.containsKey(STATUSSTRINGIDX_RATELATEST)) {
+				if (sb.length()>0) sb.append("\n");
+				sb.append(String.format(mStatsStrings.get(STATUSSTRINGIDX_RATELATEST), wassup.latestEventsRate()));
+			}
+			mStatsTextView.setText(sb.toString());
 		}
-		if (wassup != null) {
-			if (sb.length()>0) sb.append("\n");
-			sb.append(String.format(getString(R.string.label_statistics_eventscount_T), wassup.eventsCount()));
-			sb.append("\n");
-			sb.append(String.format(getString(R.string.label_statistics_totalrate_T), wassup.totalEventsRate()));
-		}
-		if (tv != null)
-			tv.setText(sb.toString());
-		
 	}
 
 /*	

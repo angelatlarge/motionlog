@@ -57,7 +57,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	
 	private static final int NOTIFICATIONID_INPROGRESS = 001;
 	private static final int HANDLERTHREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_DEFAULT;
-	private static final int UPDATE_STATISTICS_EVERY_DEFAULT = 10;
+	private static final int UPDATE_STATISTICS_EVERY_INITIAL = 2;
 	
 	private Looper mServiceLooper;
 	private ServiceHandler mServiceHandler;
@@ -74,7 +74,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
     private long mFirstTotalEventTimestamp;		// Timestamp of the first event
     private long mFirstLatestEventTimestamp;	// Timestamp of the since activity has been updated
     
-    private int mUpdateStatisticsRatio = UPDATE_STATISTICS_EVERY_DEFAULT;
+    private int mUpdateStatisticsRatio = UPDATE_STATISTICS_EVERY_INITIAL;
     
 	// Handler that receives messages from the thread
 	@SuppressLint("HandlerLeak")
@@ -142,7 +142,6 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 				Log.d("AccelerometerLoggerService", String.format("New sensor rate: %d, ", mSensorRate));
 				mLoggingType = extras.getInt(INTENTEXTRA_LOGGINGTYPE, DEFAULT_LOGTYPE);
 				Log.d("AccelerometerLoggerService", String.format("New logging type: %d\n", mLoggingType));
-				mUpdateStatisticsRatio = UPDATE_STATISTICS_EVERY_DEFAULT;
 				startLogging();
 				break;
 			case INTENTCOMMAND_STOPLOGGING:
@@ -227,6 +226,8 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
         
         // Reset the sensor events count
         mTotalSensorEventsCount = 0;
+        // Reset the update rate
+        mUpdateStatisticsRatio = UPDATE_STATISTICS_EVERY_INITIAL;
         
 		// Register for sensor events
         mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
@@ -300,11 +301,10 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
     		// Update sensor cound and first timestamp
         	if (mTotalSensorEventsCount++ == 0) {
         		mFirstTotalEventTimestamp = event.timestamp;
-        	}
-    		
-        	// Send statistics update
-    		if ( (mTotalSensorEventsCount%mUpdateStatisticsRatio) == 0 ) {
-    			//~ Log.v("AccelerometerLoggerService", "sending statistics");
+        	} else if ( (mTotalSensorEventsCount%mUpdateStatisticsRatio) == 0 ) {
+        		// Send statistics update
+        		
+    			Log.v("AccelerometerLoggerService", "sending statistics");
     			
     			// If there isn't an intent already, create one
     			if (intent==null) { 
@@ -319,7 +319,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
         		mFirstLatestEventTimestamp = event.timestamp;
         		
         		// Update the update rate
-        		mUpdateStatisticsRatio = (int)sensorRateTotal/2;
+        		mUpdateStatisticsRatio = Math.max((int)sensorRateTotal/2,1); 
     		}
         	
     		// If there is an intent to send, do send it
