@@ -36,6 +36,9 @@
 	<string name="error_cannotcreatedir">External storage unavailable: can\'t start log</string>
 	<string name="error_noexternalstorage">Cannot create app directory: can\'t start log</string>
 	<string name="label_capturing_to_file">Capturing to data file...</string>
+	<string name="label_statistics_eventscount_T">%d events captured</string>
+	<string name="label_statistics_filename_T">filename: %s</string>
+	<string name="label_statistics_totalrate_T">%.2f events/second</string>
 	
 	
 </resources>

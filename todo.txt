@@ -1,7 +1,4 @@
-Disable UI
-	Disable options while logging
-	Disable graph while logging to file
-	Add another indicator that logging to file is taking place?
+Remove settings buttons while logging?
 Test the app - logging
 Make the menu icons semi-transparent
 Make sure that the service is killed when app is paused/killed when logging to screen only
@@ -18,3 +15,6 @@ Test app installation
 Need to implement the whole wake-lock thing from the post
 Need to look at the accelerometer lecture
 Add push on axis to show where axis is
+Load load file on finish
+X axis labels
+Scroll

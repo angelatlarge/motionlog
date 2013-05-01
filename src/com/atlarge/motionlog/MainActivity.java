@@ -53,11 +53,13 @@ public class MainActivity extends Activity  implements
 	private static final boolean LOGCONFIRMATIONPROMPT_DEFAULT = true;
 	private boolean mLogConfirmationPrompt = LOGCONFIRMATIONPROMPT_DEFAULT;
 	private Bitmap mFileLoggingBitmap = null;
-	int counter = 0;
-	IconicAdapter mSpeedSpinnerAdapter;
-	IconicAdapter mLogTargetSpinnerAdapter;
-	StringResourceMapper mSpeedSpinnerMapping;
-	StringResourceMapper mLogTargetSpinnerMapping;
+	private int counter = 0;
+	private IconicAdapter mSpeedSpinnerAdapter;
+	private IconicAdapter mLogTargetSpinnerAdapter;
+	private StringResourceMapper mSpeedSpinnerMapping;
+	private StringResourceMapper mLogTargetSpinnerMapping;
+	private int mSensorEventsCounter;
+	private String mLogFilename = null;
 
 	/********************************************************************/
 /*	
@@ -70,15 +72,22 @@ public class MainActivity extends Activity  implements
 */	
 	/********************************************************************/
 	private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
+		
 	  	@Override
 	  	public void onReceive(Context context, Intent intent) {
 	  		// Get extra data included in the Intent
 			Log.d("MainActivity", "onReceive");		
 			Bundle extras = intent.getExtras();
+			StatusUpdatePacket wassup = null;
 			// Get the notification flag
 			boolean forceNotifyFlag = false;
 			if (extras != null) {  
 				forceNotifyFlag =  extras.getBoolean(AccelerometerLoggerService.INTENTEXTRA_STATUS_FORCENOTIFYFLAG, false);
+				// Check for status update
+				Object entry = extras.get(AccelerometerLoggerService.INTENTEXTRA_STATUSUPDATEPACKET);
+				if ( entry != null ) {
+					wassup = (StatusUpdatePacket)entry;
+				}
 			}
 			// Process the intent action
 	  		if (intent.getAction().equals(AccelerometerLoggerService.ACTION_STATUS_LOGGING)) {
@@ -87,6 +96,12 @@ public class MainActivity extends Activity  implements
 					mSensorUpdateSpeed = extras.getInt(AccelerometerLoggerService.INTENTEXTRA_UPDATERATE, AccelerometerLoggerService.DEFAULT_SENSOR_RATE);
 				}
 		  		mIsLogging = true;
+				if(extras != null) {
+					Object objFilename = extras.get(AccelerometerLoggerService.INTENTEXTRA_LOGFILENAME);
+					if (objFilename != null) {
+						mLogFilename = (String)objFilename;
+					}
+				}
 				if (forceNotifyFlag)
 					Toast.makeText(MainActivity.this, "Logging started", Toast.LENGTH_SHORT).show();	 	    	
 				updateUI();
@@ -103,9 +118,16 @@ public class MainActivity extends Activity  implements
 					long timestamp = extras.getLong(AccelerometerLoggerService.INTENTEXTRA_SENSORTIMESTAMP, 0);
 					processNewSensorValues(values, timestamp);
 				}	  			
+	  		} else if (intent.getAction().equals(AccelerometerLoggerService.ACTION_STATISTICS)) {
+	  			// Do nothing, we will process the update packet anyway
+				Log.d("MainActivity", "onReceive: ACTION_STATISTICS");		
 	  		} else {
 	  			// Captured unknown intent
 				Log.d("MainActivity", "onReceive: unknown action");		
+	  		}
+	  		
+	  		if (wassup!= null) {
+	  			updateLoggingStatus(wassup);
 	  		}
 	  	}
 	};
@@ -122,6 +144,7 @@ public class MainActivity extends Activity  implements
 		filter.addAction(AccelerometerLoggerService.ACTION_STATUS_LOGGING);
 		filter.addAction(AccelerometerLoggerService.ACTION_STATUS_NOTLOGGING);
 		filter.addAction(AccelerometerLoggerService.ACTION_SENSORCHANGED);
+		filter.addAction(AccelerometerLoggerService.ACTION_STATISTICS);
 		LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver, filter);
 		
 		// The speed spinner
@@ -490,17 +513,21 @@ public class MainActivity extends Activity  implements
 		
 		LinearLayout llf = (LinearLayout)findViewById(R.id.layout_logging_to_file);
 		if  (((mLogTargetType & AccelerometerLoggerService.LOGTYPE_GRAPH) > 0 ) | (!mIsLogging)) {
+			// Logging to file only
 			llf.setVisibility(View.GONE);
 			setGVvisibility(View.VISIBLE);
 		} else {
+			// Logging at least in part to screen
 			ensureFileLoggingImageSet();
 			setGVvisibility(View.GONE);
 			llf.setVisibility(View.VISIBLE);
+			updateLoggingStatus(null);			
 		}
 		
 		spinner = (Spinner) findViewById(R.id.spinnerCaptureType);
 		if (spinner != null)
 			spinner.setEnabled(!mIsLogging);
+		
 	}
 	
 	@Override
@@ -559,7 +586,26 @@ public class MainActivity extends Activity  implements
 	public void buttonsettings_click(View view) {
 		showSettings();
 	}
-	
+
+	private void updateLoggingStatus(StatusUpdatePacket wassup) {
+		Log.d("MainActivity", "updateLoggingStatus()");
+		StringBuilder sb = new StringBuilder();
+		TextView tv = (TextView)findViewById(R.id.logging_to_file_textstatistics);
+		
+		if ( (mLogFilename != null) && (mLogFilename.length() > 0)) {
+			sb.append(String.format(getString(R.string.label_statistics_filename_T), mLogFilename));
+		}
+		if (wassup != null) {
+			if (sb.length()>0) sb.append("\n");
+			sb.append(String.format(getString(R.string.label_statistics_eventscount_T), wassup.eventsCount()));
+			sb.append("\n");
+			sb.append(String.format(getString(R.string.label_statistics_totalrate_T), wassup.totalEventsRate()));
+		}
+		if (tv != null)
+			tv.setText(sb.toString());
+		
+	}
+
 /*	
 	@Override
 	public void onConfigurationChanged(Configuration newConfig) {

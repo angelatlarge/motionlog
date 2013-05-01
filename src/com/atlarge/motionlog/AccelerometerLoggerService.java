@@ -23,6 +23,8 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
@@ -36,6 +38,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	public static final String ACTION_STATUS_LOGGING = "com.atlarge.motionlog.status.logging";
 	public static final String ACTION_STATUS_NOTLOGGING = "com.atlarge.motionlog.status.notlogging";
 	public static final String ACTION_SENSORCHANGED = "com.atlarge.motionlog.sensorchanged";
+	public static final String ACTION_STATISTICS = "com.atlarge.motionlog.statistics";
 	public static final String APPLICATION_DIR = "com.atlarge.motionlog";
 	public static final String INTENTEXTRA_COMMAND = "com.atlarge.servicecommand";
 	public static final int INTENTCOMMAND_RETURNSTATUS	= 0x01;
@@ -45,6 +48,8 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	public static final String INTENTEXTRA_LOGGINGTYPE = "com.atlarge.loggingtype";
 	public static final String INTENTEXTRA_SENSORVALUES = "com.atlarge.sensorvalues";
 	public static final String INTENTEXTRA_SENSORTIMESTAMP = "com.atlarge.sensortimestamp";
+	public static final String INTENTEXTRA_LOGFILENAME = "com.atlarge.logfilename";
+	public static final String INTENTEXTRA_STATUSUPDATEPACKET = "com.atlarge.statusupdatepacket";
 //	public static final String INTENTEXTRA_SENSOREVENT = "com.atlarge.sensorevent";
 	public static final String INTENTEXTRA_STATUS_FORCENOTIFYFLAG = "com.atlarge.status.forcenotifyflag";
 	public static final int DEFAULT_SENSOR_RATE = SensorManager.SENSOR_DELAY_NORMAL;
@@ -52,6 +57,7 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	
 	private static final int NOTIFICATIONID_INPROGRESS = 001;
 	private static final int HANDLERTHREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_DEFAULT;
+	private static final int UPDATE_STATISTICS_EVERY = 10;
 	
 	private Looper mServiceLooper;
 	private ServiceHandler mServiceHandler;
@@ -63,6 +69,12 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 	private int mLoggingType = DEFAULT_LOGTYPE;
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
+    private String mLogFilename;
+    private int mTotalSensorEventsCount;		// Number of sensor events this run
+    private long mFirstTotalEventTimestamp;		// Timestamp of the first event
+    private long mFirstLatestEventTimestamp;	// Timestamp of the since activity has been updated
+    
+    private int mUpdateStatisticsRatio = UPDATE_STATISTICS_EVERY;
     
 	// Handler that receives messages from the thread
 	@SuppressLint("HandlerLeak")
@@ -183,8 +195,8 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 		    // Create a file
 		    SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd_HH-mm-ss", Locale.US);
 		    Date now = new Date();
-		    String logFN = formatter.format(now) + ".txt";
-	        logFile = new File(logDir.getAbsolutePath(), logFN);
+		    mLogFilename = formatter.format(now) + ".txt";
+	        logFile = new File(logDir.getAbsolutePath(), mLogFilename);
 	        try {
 	        	logOutputStream = new FileOutputStream(logFile);
 		        logWriter = new PrintWriter(logOutputStream);
@@ -211,6 +223,9 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
         // Create a notification
         notificationStart();
         
+        // Reset the sensor events count
+        mTotalSensorEventsCount = 0;
+        
 		// Register for sensor events
         mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -236,6 +251,8 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 		if (logging) {
 			intent.setAction(ACTION_STATUS_LOGGING);
 			intent.putExtra(INTENTEXTRA_UPDATERATE, mSensorRate);
+			intent.putExtra(INTENTEXTRA_LOGGINGTYPE, mLoggingType);
+			intent.putExtra(INTENTEXTRA_LOGFILENAME, mLogFilename);
 		} else {
 			intent.setAction(ACTION_STATUS_NOTLOGGING);
 		}		
@@ -257,23 +274,56 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 //		if (++mCounter % 50 == 0) {
 			Log.v("AccelerometerLoggerService", "onSensorChanged");
 	        try {
+	        	
+	        	// Write to file, if writing to file is desired
 	        	if (logWriter != null) {
-//	    		if ((mLoggingType & LOGTYPE_FILE) > 0) {
 	    			Log.v("AccelerometerLoggerService", "saving to file");
 		        	logWriter.print(event.timestamp);
 		        	for (int i=0;i<event.values.length;i++)
 		        		logWriter.format("\t%f", event.values[i]);
 		        	logWriter.println();
 	    		}
+	        	
+	        	Intent intent = null;
+	        	
+	        	// Send a notification to the main window, if that's what is called for
 	    		if ((mLoggingType & LOGTYPE_GRAPH) > 0) {
 	        		// Notify the parent window
 	    			Log.v("AccelerometerLoggerService", "notifying parent");
-	        		Intent intent = new Intent();
+	        		intent = new Intent();
 	        		intent.setAction(ACTION_SENSORCHANGED);
 	        		intent.putExtra(INTENTEXTRA_SENSORVALUES, event.values);
 	        		intent.putExtra(INTENTEXTRA_SENSORTIMESTAMP, event.timestamp);
-	        		LocalBroadcastManager.getInstance(this).sendBroadcast(intent);        		
 	        	}
+	    		
+	    		// Update sensor cound and first timestamp
+	        	if (mTotalSensorEventsCount++ == 0) {
+	        		mFirstTotalEventTimestamp = event.timestamp;
+	        	}
+	    		
+	        	// Send statistics update
+	    		if ( (mTotalSensorEventsCount%mUpdateStatisticsRatio) == 0 ) {
+	    			Log.v("AccelerometerLoggerService", "sending statistics");
+	    			
+	    			// If there isn't an intent already, create one
+	    			if (intent==null) { 
+		        		intent = new Intent();
+		        		intent.setAction(ACTION_STATISTICS);
+	    			}
+	    			long nsecsTotal, nsecsLatest;
+	    			nsecsTotal = event.timestamp - mFirstTotalEventTimestamp;
+	    			nsecsLatest = event.timestamp - mFirstLatestEventTimestamp;
+
+	    			intent.putExtra(INTENTEXTRA_STATUSUPDATEPACKET, new StatusUpdatePacket(mTotalSensorEventsCount, mTotalSensorEventsCount / (nsecsTotal/1000000000f), mUpdateStatisticsRatio / (nsecsLatest/1000000000f))); 
+	        		mFirstLatestEventTimestamp = event.timestamp;
+	    		}
+	        	
+	    		// If there is an intent to send, do send it
+	    		if (intent != null ) {
+	    			Log.v("AccelerometerLoggerService", "broadcasting intent");
+	    			LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+	    		}
+	    		
 	        } catch (Exception e) {
 	            e.printStackTrace();
 	        }
