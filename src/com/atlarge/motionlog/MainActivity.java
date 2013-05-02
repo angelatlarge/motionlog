@@ -199,9 +199,20 @@ public class MainActivity extends Activity  implements
 				}
 				break;
 			case DataloggerService.MSG_RESPONSE_STATISTICS:
-				// TODO: Do something
+				Log.d("MainActivity.IncomingHandler", "MSG_RESPONSE_STATISTICS");
+				if (bundle==null) {
+					Log.d("MainActivity.IncomingHandler", "bundle is null");
+				} else {
+					DataloggerService.DataloggerStatisticsParams params = (DataloggerService.DataloggerStatisticsParams)bundle.getParcelable(DataloggerService.BUNDLEKEY_PARCELLABLE_PARAMS);
+					if (params == null) {
+						Log.e("MainActivity.IncomingHandler", "Null params for BUNDLEKEY_PARCELLABLE_PARAMS");
+					} else {
+						updateLoggingStatistics(params);
+					}
+				}
 				break;
 			case DataloggerService.MSG_RESPONSE_SENSOREVENT:
+				Log.d("MainActivity.IncomingHandler", "MSG_RESPONSE_SENSOREVENT");
 				if (bundle == null) {
 					Log.e("MainActivity.IncomingHandler", "Null bundle");
 				} else {
@@ -745,7 +756,7 @@ public class MainActivity extends Activity  implements
 		StringBuilder sb = new StringBuilder();
 		
 		if ( (mStatsTextView != null) && (mStatsStrings != null) ) {
-			if ((params!=null) && (mLogFilename != null) && (mLogFilename.length() > 0) && mStatsStrings.containsKey(STATUSSTRINGIDX_FILENAME)) {
+			if ((mLogFilename != null) && (mLogFilename.length() > 0) && mStatsStrings.containsKey(STATUSSTRINGIDX_FILENAME)) {
 				if (sb.length()>0) sb.append("\n");
 				sb.append(String.format(mStatsStrings.get(STATUSSTRINGIDX_FILENAME), mLogFilename));
 			}

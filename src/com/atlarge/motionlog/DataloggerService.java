@@ -61,6 +61,7 @@ public class DataloggerService extends Service implements SensorEventListener {
     private int mTotalSensorEventsCount;		// Number of sensor events this run
     private long mFirstTotalEventTimestamp;		// Timestamp of the first event
     private long mFirstLatestEventTimestamp;	// Timestamp of the since activity has been updated
+    private static final float mStatisticsUpdateFrequency = 1;	// Updating frequency 
     
     private int mUpdateStatisticsRatio = UPDATE_STATISTICS_EVERY_INITIAL;
 
@@ -241,7 +242,7 @@ public class DataloggerService extends Service implements SensorEventListener {
 		}
 	};
 		
-	public static class DataloggerStatisticsParams extends DataloggerParams {
+	public static class DataloggerStatisticsParams extends DataloggerParams implements Parcelable {
 		protected long mEventsCount;
 		protected float mTotalRate;
 		protected float mLatestRate;
@@ -254,6 +255,15 @@ public class DataloggerService extends Service implements SensorEventListener {
 		public float getTotalRate() { return mTotalRate; }
 		public float getLatestRate() { return mLatestRate; }
 		
+		public static final Parcelable.Creator<DataloggerStatisticsParams> CREATOR
+			= new Parcelable.Creator<DataloggerStatisticsParams>() {
+				public DataloggerStatisticsParams createFromParcel(Parcel in) {
+						return new DataloggerStatisticsParams(in);
+				}
+			public DataloggerStatisticsParams[] newArray(int size) {
+					return new DataloggerStatisticsParams[size];
+			}
+		};
 		DataloggerStatisticsParams(Parcel in) {
 			super(in);
 			mEventsCount = in.readLong();
@@ -361,9 +371,11 @@ public class DataloggerService extends Service implements SensorEventListener {
         	DataloggerStatisticsParams params = new DataloggerStatisticsParams(eventsCount, totalRate, latestRate);
         	Bundle bundle = new Bundle();
         	bundle.putParcelable(BUNDLEKEY_PARCELLABLE_PARAMS, params);
+        	Message msg = Message.obtain(null, MSG_RESPONSE_STATISTICS);
+        	msg.setData(bundle);
             for (int i=mClients.size()-1; i>=0; i--) {
                 try {
-                    mClients.get(i).send(Message.obtain(null, MSG_RESPONSE_SENSOREVENT, bundle));
+                    mClients.get(i).send(msg);
                 } catch (RemoteException e) {
                     // The client is dead.  Remove it from the list;
                     // we are going through the list from back to front
@@ -554,7 +566,7 @@ public class DataloggerService extends Service implements SensorEventListener {
         		mFirstLatestEventTimestamp = event.timestamp;
         		
         		// Update the update rate
-        		mUpdateStatisticsRatio = Math.max((int)sensorRateTotal/2,1); 
+        		mUpdateStatisticsRatio = Math.max(Math.round(sensorRateTotal/mStatisticsUpdateFrequency), 1);
     		}
         	
         } catch (Exception e) {
