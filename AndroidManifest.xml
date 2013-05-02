@@ -27,7 +27,7 @@
 			android:screenOrientation="portrait" 
             android:theme="@android:style/Theme.Holo.NoActionBar"
         >
-<!-- android:theme="@android:style/Theme.NoTitleBar.Fullscreen"  -->
+		<!-- android:theme="@android:style/Theme.NoTitleBar.Fullscreen"  -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -42,9 +42,11 @@
         />
         
         <service
-            android:name="com.atlarge.motionlog.AccelerometerLoggerService"
+            android:name="com.atlarge.motionlog.DataloggerService"
             android:enabled="true"
-            android:exported="false" >
+            android:exported="false" 
+            android:process=":datalogger" 
+		>
         </service>
     </application>
 

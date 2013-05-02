@@ -1,6 +1,11 @@
 package com.atlarge.motionlog;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.Message;
+import android.os.Messenger;
+import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.app.ActionBar;
 import android.app.Activity;
@@ -10,6 +15,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
@@ -47,10 +53,9 @@ public class MainActivity extends Activity  implements
 			,LogConfirmationDialogFragment.DialogListener
 {
 	private boolean mSingleGraph = false;
-    private AccelerometerLoggerService mService;
 	private boolean mIsLogging = false;
-	private int mSensorUpdateSpeed = AccelerometerLoggerService.DEFAULT_SENSOR_RATE;
-	private int mLogTargetType = AccelerometerLoggerService.LOGTYPE_GRAPH;
+	private int mSensorUpdateSpeed = DataloggerService.DEFAULT_SENSOR_RATE;
+	private int mLogTargetType = DataloggerService.LOGTYPE_GRAPH;
 	private GraphViewBase[] mGVs = null;
 	private TextView[] mGVlabels = null;
 	private static final boolean LOGCONFIRMATIONPROMPT_DEFAULT = true;
@@ -70,79 +75,126 @@ public class MainActivity extends Activity  implements
 	private HashMap<Integer,String> mStatsStrings;
 	private TextView mStatsTextView;
 
+	
+	/********************************************************************/
+    /**
+     * Class for interacting with the main interface of the service.
+     */
+	
+	/**
+	 * Target we publish for clients to send messages to IncomingHandler.
+	 */
+	final Messenger mMessenger = new Messenger(new IncomingHandler());
 
-	/********************************************************************/
-/*	
-	private class IconicPopupMenu extends PopupMenu {
-		IconicPopupMenu(Context context, View anchor) {
-			super(context, anchor);
-			setForceShowIcon(true); //ADD THIS LINE
-		}
-	}
-*/	
-	/********************************************************************/
-	private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
-		
-	  	@Override
-	  	public void onReceive(Context context, Intent intent) {
-	  		// Get extra data included in the Intent
-			//~ Log.d("MainActivity", "onReceive");		
-			Bundle extras = intent.getExtras();
-			StatusUpdatePacket wassup = null;
-			// Get the notification flag
-			boolean forceNotifyFlag = false;
-			if (extras != null) {  
-				forceNotifyFlag =  extras.getBoolean(AccelerometerLoggerService.INTENTEXTRA_STATUS_FORCENOTIFYFLAG, false);
-				// Check for status update
-				Object entry = extras.get(AccelerometerLoggerService.INTENTEXTRA_STATUSUPDATEPACKET);
-				if ( entry != null ) {
-					wassup = (StatusUpdatePacket)entry;
-				}
+	
+    /** Flag indicating whether we have called bind on the service. */
+    boolean mIsBound = false;
+    
+	
+    /** Messenger for communicating with service. */
+    Messenger mService = null;
+    
+    private ServiceConnection mConnection = new ServiceConnection() {
+		public void onServiceConnected(ComponentName className, IBinder service) {
+			Log.d("MainActivity", "onServiceConnected()");
+			// This is called when the connection with the service has been
+			// established, giving us the service object we can use to
+			// interact with the service.  We are communicating with our
+			// service through an IDL interface, so get a client-side
+			// representation of that from the raw service object.
+			mService = new Messenger(service);
+
+			// We want to monitor the service for as long as we are
+			// connected to it.
+			try {
+				Message msg = Message.obtain(null, DataloggerService.MSG_COMMAND_REGISTERCLIENT);
+				msg.replyTo = mMessenger;
+				mService.send(msg);
+				
+				// Ask the service to update us on what it is doing
+				msg = Message.obtain(null, DataloggerService.MSG_COMMAND_GETSTATUS);
+				msg.replyTo = mMessenger;
+				mService.send(msg);
+			} catch (RemoteException e) {
+				// In this case the service has crashed before we could even
+				// do anything with it; we can count on soon being
+				// disconnected (and then reconnected if it can be restarted)
+				// so there is no need to do anything here.
 			}
-			// Process the intent action
-	  		if (intent.getAction().equals(AccelerometerLoggerService.ACTION_STATUS_LOGGING)) {
-				Log.d("MainActivity", "onReceive: ACTION_STATUS_LOGGING");		
-		  		mIsLogging = true;
-				if(extras != null) {
-					mSensorUpdateSpeed = extras.getInt(AccelerometerLoggerService.INTENTEXTRA_UPDATERATE, AccelerometerLoggerService.DEFAULT_SENSOR_RATE);
-					mLogTargetType = extras.getInt(AccelerometerLoggerService.INTENTEXTRA_LOGGINGTYPE, AccelerometerLoggerService.DEFAULT_LOGTYPE);
-					Object objFilename = extras.get(AccelerometerLoggerService.INTENTEXTRA_LOGFILENAME);
-					if (objFilename != null) {
-						mLogFilename = (String)objFilename;
+			
+		}
+/*		
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            // This is called when the connection with the service has been
+            // established, giving us the object we can use to
+            // interact with the service.  We are communicating with the
+            // service using a Messenger, so here we get a client-side
+            // representation of that from the raw IBinder object.
+            mService = new Messenger(service);
+            mBound = true;
+			
+			// We want to monitor the service for as long as we are
+			// connected to it.
+			try {
+				Message msg = Message.obtain(null,
+						DataloggerService.MSG_REGISTER_CLIENT);
+				msg.replyTo = mMessenger;
+				mService.send(msg);
+				
+				// Give it some value as an example.
+				msg = Message.obtain(null, DataloggerService.MSG_SET_VALUE, this.hashCode(), 0);
+				mService.send(msg);
+			} catch (RemoteException e) {
+				// In this case the service has crashed before we could even
+				// do anything with it; we can count on soon being
+				// disconnected (and then reconnected if it can be restarted)
+				// so there is no need to do anything here.
+			}
+			
+        }
+*/
+        public void onServiceDisconnected(ComponentName className) {
+            // This is called when the connection with the service has been
+            // unexpectedly disconnected -- that is, its process crashed.
+            mService = null;
+            mIsBound = false;
+        }
+    };
+	
+	/********************************************************************/
+	
+	/**
+	 * Handler of incoming messages from service.
+	 */
+	class IncomingHandler extends Handler {
+		@Override
+		public void handleMessage(Message msg) {
+			switch (msg.what) {
+			case DataloggerService.MSG_RESPONSE_STATUS:
+				DataloggerService.DataloggerStatusParams params = (DataloggerService.DataloggerStatusParams)msg.obj; 
+		  		mIsLogging = params.getLogging();
+		  		mSensorUpdateSpeed = params.getSensorUpdateDelay();
+		  		mLogTargetType = params.getLoggingType();
+		  		mLogFilename = params.getFilename();
+				updateUI();
+				if (params.getStatusChanged()) {
+					if (mIsLogging) {
+						Toast.makeText(MainActivity.this, "Logging stopped", Toast.LENGTH_SHORT).show();
+					} else {
+						Toast.makeText(MainActivity.this, "Logging started", Toast.LENGTH_SHORT).show();
 					}
 				}
-				if (forceNotifyFlag)
-					Toast.makeText(MainActivity.this, "Logging started", Toast.LENGTH_SHORT).show();	 	    	
-				updateUI();
-	  		} else if (intent.getAction().equals(AccelerometerLoggerService.ACTION_STATUS_NOTLOGGING)) {
-				Log.d("MainActivity", "onReceive: ACTION_STATUS_NOTLOGGING");		
-		  		mIsLogging = false;
-				if (forceNotifyFlag)
-					Toast.makeText(MainActivity.this, "Logging stopped", Toast.LENGTH_SHORT).show();	 	    	
-				updateUI();
-	  		} else if (intent.getAction().equals(AccelerometerLoggerService.ACTION_SENSORCHANGED)) {
-				Log.d("MainActivity", "onReceive: ACTION_SENSORCHANGED");		
-				if(extras != null) {
-					float[] values = extras.getFloatArray(AccelerometerLoggerService.INTENTEXTRA_SENSORVALUES);
-					long timestamp = extras.getLong(AccelerometerLoggerService.INTENTEXTRA_SENSORTIMESTAMP, 0);
-					processNewSensorValues(values, timestamp);
-				}	  			
-	  		} else if (intent.getAction().equals(AccelerometerLoggerService.ACTION_STATISTICS)) {
-	  			// Do nothing, we will process the update packet anyway
-				//~ Log.d("MainActivity", "onReceive: ACTION_STATISTICS");		
-	  		} else {
-	  			// Captured unknown intent
-				Log.d("MainActivity", "onReceive: unknown action");		
-	  		}
-	  		
-	  		if (wassup!= null) {
-	  			updateLoggingStatistics(wassup);
-	  		}
-	  	}
-	};
+				break;
+			case DataloggerService.MSG_RESPONSE_STATISTICS:
+				// TODO: Do something
+				break;
+			default:
+				super.handleMessage(msg);
+			}
+		}
+	}
 	
 	/********************************************************************/
-	
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -174,7 +226,7 @@ public class MainActivity extends Activity  implements
 		mLogTargetSpinnerMapping = 
 				new StringResourceMapper(
 						new int[] {R.string.menu_CAPTURETARGET_GRAPH ,      R.string.menu_CAPTURETARGET_FILE,        R.string.menu_CAPTURETARGET_BOTH},
-						new int[] {AccelerometerLoggerService.LOGTYPE_GRAPH,AccelerometerLoggerService.LOGTYPE_FILE, AccelerometerLoggerService.LOGTYPE_BOTH}
+						new int[] {DataloggerService.LOGTYPE_GRAPH,DataloggerService.LOGTYPE_FILE, DataloggerService.LOGTYPE_BOTH}
 					);
 		Spinner spinnerCaptureType = (Spinner) findViewById(R.id.spinnerCaptureType);
 		mLogTargetSpinnerAdapter  = new IconicAdapter(
@@ -214,8 +266,7 @@ public class MainActivity extends Activity  implements
 		Log.d("MainActivity", "onPause");
 		
 		if (!mIsLogging)
-			stopService();
-		unregisterServiceMsgReceiver();
+			disconnectFromService();
 	}
 	
 	@Override
@@ -223,25 +274,12 @@ public class MainActivity extends Activity  implements
 		super.onResume();  // Always call the superclass method first
 		Log.d("MainActivity", "onResume");
 		
-		// Register as broadcast receiver, which is how we communicated with our service
-		registerServiceMsgReceiver();
 		// Connect to our service, which will update the UI
 		connectToService();
 
 	}
 	
-	private void registerServiceMsgReceiver() {
-		IntentFilter filter = new IntentFilter();
-		filter.addAction(AccelerometerLoggerService.ACTION_STATUS_LOGGING);
-		filter.addAction(AccelerometerLoggerService.ACTION_STATUS_NOTLOGGING);
-		filter.addAction(AccelerometerLoggerService.ACTION_SENSORCHANGED);
-		filter.addAction(AccelerometerLoggerService.ACTION_STATISTICS);
-		LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver, filter);
-	}		
-	
-	private void unregisterServiceMsgReceiver() {
-		LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
-	}
+		
 	private void createGraphViews() {
 		View toolbar = findViewById(R.id.toolbar);
 		LinearLayout layout  = (LinearLayout)toolbar.getParent();
@@ -307,31 +345,57 @@ public class MainActivity extends Activity  implements
 		Log.d("MainActivity", "onStop");
 		
 		if (!mIsLogging)
-			stopService();
+			disconnectFromService();
 	}
 	
 	
 	private void connectToService() {
-		Intent startIntent = new Intent(this, AccelerometerLoggerService.class);
-		startIntent.putExtra(AccelerometerLoggerService.INTENTEXTRA_COMMAND, AccelerometerLoggerService.INTENTCOMMAND_RETURNSTATUS);
+		// Start the service
+		Intent startIntent = new Intent(this, DataloggerService.class);
 		ComponentName startResult = startService(startIntent);
 		if (startResult==null) {
 			Log.e("MainActivity", "Unable to start our service");
 		} else {
 			Log.d("MainActivity", "Started the service");
 		}
+		// Bind to the service
+       bindService(new Intent(this, DataloggerService.class), mConnection, 0);		
 	}
 
-	private void stopService() {
-		Log.d("MainActivity", "stopService()");
-		Intent stopIntent = new Intent(this, AccelerometerLoggerService.class);
+	
+	private void disconnectFromService() {
+		Log.d("MainActivity", "disconnectFromService()");
+
+		// Unbind
+		if (mIsBound) {
+			// If we have received the service, and hence registered with
+			// it, then now is the time to unregister.
+			if (mService != null) {
+				try {
+					Message msg = Message.obtain(null, DataloggerService.MSG_COMMAND_UNREGISTERCLIENT);
+					msg.replyTo = mMessenger;
+					mService.send(msg);
+				} catch (RemoteException e) {
+					// There is nothing special we need to do if the service
+					// has crashed.
+				}
+			}
+			
+			// Detach our existing connection.
+			unbindService(mConnection);
+			mIsBound = false;
+		}
+		
+		// Stop the service
+		Intent stopIntent = new Intent(this, DataloggerService.class);
 		boolean stopResult = stopService(stopIntent);
 		if (stopResult) {
 			Log.d("MainActivity", "Service stopped");
 		} else {
-			Log.d("MainActivity", "stopService() returned false");
+			Log.d("MainActivity", "disconnectFromService() returned false");
 		}
 	}
+	
 	
 	private boolean getUseLogConfirmationPrompt() {
 		SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
@@ -355,7 +419,7 @@ public class MainActivity extends Activity  implements
 			stopLogging();
 		} else {
 			if (
-				((mLogTargetType & AccelerometerLoggerService.LOGTYPE_FILE) > 0)
+				((mLogTargetType & DataloggerService.LOGTYPE_FILE) > 0)
 				&&
 				getUseLogConfirmationPrompt()
 			){ // Logging to file
@@ -411,35 +475,29 @@ public class MainActivity extends Activity  implements
 			}
 		}
 		
-		Log.v("MainActivity", String.format("Using sensor rate: %d\n", mSensorUpdateSpeed));
-			
-		// Communicate with the service via the startService command
-		Intent intent = new Intent(this, AccelerometerLoggerService.class);
-		intent.putExtra(AccelerometerLoggerService.INTENTEXTRA_COMMAND, AccelerometerLoggerService.INTENTCOMMAND_STARTLOGGING);
-		intent.putExtra(AccelerometerLoggerService.INTENTEXTRA_UPDATERATE, mSensorUpdateSpeed);
-		intent.putExtra(AccelerometerLoggerService.INTENTEXTRA_LOGGINGTYPE, mLogTargetType);
-		intent.putExtra(AccelerometerLoggerService.INTENTEXTRA_STATUS_FORCENOTIFYFLAG, true);
-
-		ComponentName startResult = startService(intent);
-		if (startResult==null) {
-			Log.e("MainActivity", "Unable to issue start logging command via startService");
-		} else {
-			Log.d("MainActivity", "Issued start logging command successfully");
+		Message msg = Message.obtain(null, DataloggerService.MSG_COMMAND_STARTLOGGING, new DataloggerService.DataloggerStartParams(mSensorUpdateSpeed, mLogTargetType));
+		msg.replyTo = mMessenger;
+		try {
+			mService.send(msg);
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
+		Log.d("MainActivity", "Issued start logging command");
 	}
     
 	private void stopLogging() {
 		// Communicate with the service via the startService command
-		Intent intent = new Intent(this, AccelerometerLoggerService.class);
-		intent.putExtra(AccelerometerLoggerService.INTENTEXTRA_COMMAND, AccelerometerLoggerService.INTENTCOMMAND_STOPLOGGING);
-		intent.putExtra(AccelerometerLoggerService.INTENTEXTRA_STATUS_FORCENOTIFYFLAG, true);
-		ComponentName startResult = startService(intent);
-		if (startResult==null) {
-			Log.e("MainActivity", "Unable to issue stop logging command via startService");
-		} else {
-			Log.d("MainActivity", "Issued stop logging command successfully");
+		Message msg = Message.obtain(null, DataloggerService.MSG_COMMAND_STOPLOGGING);
+		msg.replyTo = mMessenger;
+		try {
+			mService.send(msg);
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-		updateUI();
+		Log.d("MainActivity", "Issued stop logging command");
+//		updateUI();
 	}
 	
 	@Override
@@ -547,7 +605,7 @@ public class MainActivity extends Activity  implements
 		}
 		
 		LinearLayout llf = (LinearLayout)findViewById(R.id.layout_logging_to_file);
-		if  (((mLogTargetType & AccelerometerLoggerService.LOGTYPE_GRAPH) > 0 ) | (!mIsLogging)) {
+		if  (((mLogTargetType & DataloggerService.LOGTYPE_GRAPH) > 0 ) | (!mIsLogging)) {
 			// Logging to file only
 			llf.setVisibility(View.GONE);
 			setGVvisibility(View.VISIBLE);
@@ -566,10 +624,10 @@ public class MainActivity extends Activity  implements
 		mStatsStrings = null;
 		mStatsTextView = null;
 		if (mIsLogging) {
-			if ((mLogTargetType & AccelerometerLoggerService.LOGTYPE_FILE) > 0 ) {
+			if ((mLogTargetType & DataloggerService.LOGTYPE_FILE) > 0 ) {
 				// Logging at least in part to file
 				mStatsStrings = new HashMap<Integer, String>();
-				if (mLogTargetType == AccelerometerLoggerService.LOGTYPE_FILE) {
+				if (mLogTargetType == DataloggerService.LOGTYPE_FILE) {
 					// Logging to file only, longer strings
 					mStatsStrings.put(STATUSSTRINGIDX_FILENAME, getString(R.string.label_statistics_filename_long_T));
 					mStatsStrings.put(STATUSSTRINGIDX_EVENTS, getString(R.string.label_statistics_eventscount_long_T));
@@ -584,7 +642,7 @@ public class MainActivity extends Activity  implements
 					mStatsStrings.put(STATUSSTRINGIDX_RATELATEST, getString(R.string.label_statistics_latestrate_short_T));
 					mStatsTextView = (TextView)findViewById(R.id.logging_to_file_toptextnotice);
 				}
-				updateLoggingStatistics(null);			
+				updateLoggingStatistics((DataloggerService.DataloggerStatisticsParams)null);			
 			}
 		}	
 		
@@ -650,6 +708,31 @@ public class MainActivity extends Activity  implements
 		Log.d("MainActivity", "Log prompt is " + (getUseLogConfirmationPrompt()?"true":"false"));
 		showSettings();
 		Log.d("MainActivity", "Log prompt is " + (getUseLogConfirmationPrompt()?"true":"false"));
+	}
+
+	private void updateLoggingStatistics(DataloggerService.DataloggerStatisticsParams params) {
+		Log.d("MainActivity", "updateLoggingStatistics()");
+		StringBuilder sb = new StringBuilder();
+		
+		if ( (mStatsTextView != null) && (mStatsStrings != null) ) {
+			if ((params!=null) && (mLogFilename != null) && (mLogFilename.length() > 0) && mStatsStrings.containsKey(STATUSSTRINGIDX_FILENAME)) {
+				if (sb.length()>0) sb.append("\n");
+				sb.append(String.format(mStatsStrings.get(STATUSSTRINGIDX_FILENAME), mLogFilename));
+			}
+			if ((params!=null) && mStatsStrings.containsKey(STATUSSTRINGIDX_EVENTS)) {
+				if (sb.length()>0) sb.append("\n");
+				sb.append(String.format(mStatsStrings.get(STATUSSTRINGIDX_EVENTS), params.getEventsCount()));
+			}
+			if ((params!=null) && mStatsStrings.containsKey(STATUSSTRINGIDX_RATETOTAL)) {
+				if (sb.length()>0) sb.append("\n");
+				sb.append(String.format(mStatsStrings.get(STATUSSTRINGIDX_RATETOTAL), params.getTotalRate()));
+			}
+			if ((params!=null) && mStatsStrings.containsKey(STATUSSTRINGIDX_RATELATEST)) {
+				if (sb.length()>0) sb.append("\n");
+				sb.append(String.format(mStatsStrings.get(STATUSSTRINGIDX_RATELATEST), params.getLatestRate()));
+			}
+			mStatsTextView.setText(sb.toString());
+		}
 	}
 
 	private void updateLoggingStatistics(StatusUpdatePacket wassup) {
