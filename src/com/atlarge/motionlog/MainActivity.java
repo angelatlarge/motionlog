@@ -60,12 +60,10 @@ public class MainActivity extends Activity  implements
 	private TextView[] mGVlabels = null;
 	private static final boolean LOGCONFIRMATIONPROMPT_DEFAULT = true;
 	private Bitmap mFileLoggingBitmap = null;
-	private int counter = 0;
 	private IconicAdapter mSpeedSpinnerAdapter;
 	private IconicAdapter mLogTargetSpinnerAdapter;
 	private StringResourceMapper mSpeedSpinnerMapping;
 	private StringResourceMapper mLogTargetSpinnerMapping;
-	private int mSensorEventsCounter;
 	private String mLogFilename = null;
 	
 	private static final int STATUSSTRINGIDX_FILENAME = 0; 
@@ -170,16 +168,18 @@ public class MainActivity extends Activity  implements
 		@Override
 		public void handleMessage(Message msg) {
 			Log.d("MainActivity.IncomingHandler", "handleMessage()");
+			
+			Bundle bundle = msg.getData();
+			if (bundle!=null)  
+				bundle.setClassLoader(getClassLoader());
+			
 			switch (msg.what) {
 			case DataloggerService.MSG_RESPONSE_STATUS:
-				Bundle bundle = msg.getData();
-				bundle.setClassLoader(getClassLoader());
 				Log.d("MainActivity.IncomingHandler", "handleMessage(): MSG_RESPONSE_STATUS");
 				if (bundle==null) {
 					Log.d("MainActivity.IncomingHandler", "bundle is null");
 				} else {
-//					DataloggerService.DataloggerStatusParams params = (DataloggerService.DataloggerStatusParams)bundle.getSerializable(DataloggerService.BUNDLE_PARCELLABLE_PARAMS);
-					DataloggerService.DataloggerStatusParams params = (DataloggerService.DataloggerStatusParams)bundle.getParcelable(DataloggerService.BUNDLE_PARCELLABLE_PARAMS);
+					DataloggerService.DataloggerStatusParams params = (DataloggerService.DataloggerStatusParams)bundle.getParcelable(DataloggerService.BUNDLEKEY_PARCELLABLE_PARAMS);
 					if (params == null) {
 						Log.e("MainActivity.IncomingHandler", "params are null");
 					} else {
@@ -190,9 +190,9 @@ public class MainActivity extends Activity  implements
 						updateUI();
 						if (params.getStatusChanged()) {
 							if (mIsLogging) {
-								Toast.makeText(MainActivity.this, "Logging stopped", Toast.LENGTH_SHORT).show();
-							} else {
 								Toast.makeText(MainActivity.this, "Logging started", Toast.LENGTH_SHORT).show();
+							} else {
+								Toast.makeText(MainActivity.this, "Logging stopped", Toast.LENGTH_SHORT).show();
 							}
 						}
 					}
@@ -200,6 +200,19 @@ public class MainActivity extends Activity  implements
 				break;
 			case DataloggerService.MSG_RESPONSE_STATISTICS:
 				// TODO: Do something
+				break;
+			case DataloggerService.MSG_RESPONSE_SENSOREVENT:
+				if (bundle == null) {
+					Log.e("MainActivity.IncomingHandler", "Null bundle");
+				} else {
+					long timespamp = bundle.getLong(DataloggerService.BUNDLEKEY_SENSOREVENT_TIMESTAMP);
+					float[] values =  bundle.getFloatArray(DataloggerService.BUNDLEKEY_SENSOREVENT_VALUES);
+					if (values == null) {
+						Log.e("MainActivity.IncomingHandler", "Null values for BUNDLEKEY_SENSOREVENT_VALUES");
+					} else {
+						processNewSensorValues(values, timespamp);
+					}
+				}
 				break;
 			default:
 				super.handleMessage(msg);
@@ -490,8 +503,9 @@ public class MainActivity extends Activity  implements
 		
 		DataloggerService.DataloggerStartParams params = new DataloggerService.DataloggerStartParams(mSensorUpdateSpeed, mLogTargetType);
     	Bundle bundle = new Bundle();
-    	bundle.putParcelable(DataloggerService.BUNDLE_PARCELLABLE_PARAMS, params);
-		Message msg = Message.obtain(null, DataloggerService.MSG_COMMAND_STARTLOGGING, bundle);
+    	bundle.putParcelable(DataloggerService.BUNDLEKEY_PARCELLABLE_PARAMS, params);
+		Message msg = Message.obtain(null, DataloggerService.MSG_COMMAND_STARTLOGGING);
+		msg.setData(bundle);
 		msg.replyTo = mMessenger;
 		try {
 			mService.send(msg);

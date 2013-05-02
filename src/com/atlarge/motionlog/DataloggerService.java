@@ -3,13 +3,11 @@ package com.atlarge.motionlog;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
-import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
-import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -47,15 +45,14 @@ public class DataloggerService extends Service implements SensorEventListener {
 	public static final int DEFAULT_LOGTYPE = LOGTYPE_GRAPH;
 	
 	private static final int NOTIFICATIONID_INPROGRESS = 001;
-	private static final int HANDLERTHREAD_PRIORITY = android.os.Process.THREAD_PRIORITY_DEFAULT;
 	private static final int UPDATE_STATISTICS_EVERY_INITIAL = 2;
 	
 //	private Looper mServiceLooper;
 	private ServiceHandler mServiceHandler;
-	private boolean logging = false;
-    private File logFile;
-	private FileOutputStream logOutputStream;
-	private PrintWriter logWriter;				// Using this as a flag for whether to log to file
+	private boolean mIsLogging = false;
+    private File mLogFile;
+	private FileOutputStream mLogOutputStream;
+	private PrintWriter mLogWriter;				// Using this as a flag for whether to log to file
 	private int mSensorRate = DEFAULT_SENSOR_RATE;
 	private int mLoggingType = DEFAULT_LOGTYPE;
     private SensorManager mSensorManager;
@@ -67,7 +64,9 @@ public class DataloggerService extends Service implements SensorEventListener {
     
     private int mUpdateStatisticsRatio = UPDATE_STATISTICS_EVERY_INITIAL;
 
-    public static final String BUNDLE_PARCELLABLE_PARAMS = "com.atlarge.motionlog.BUNDLE_PARCELLABLE_PARAMS";
+    public static final String BUNDLEKEY_PARCELLABLE_PARAMS = "com.atlarge.motionlog.BUNDLE_PARCELLABLE_PARAMS";
+    public static final String BUNDLEKEY_SENSOREVENT_TIMESTAMP = "com.atlarge.motionlog.BUNDLEKEY_SENSOREVENT_TIMESTAMP";
+    public static final String BUNDLEKEY_SENSOREVENT_VALUES = "com.atlarge.motionlog.BUNDLEKEY_SENSOREVENT_VALUES";
     
     /** Keeps track of all current registered clients. */
     ArrayList<Messenger> mClients = new ArrayList<Messenger>();
@@ -114,7 +113,7 @@ public class DataloggerService extends Service implements SensorEventListener {
     /**
      * Message for updating our activities with logging statistics
      */
-	public static final int MSG_RESPONSE_STATISTICS = 0x07;
+	public static final int MSG_RESPONSE_STATISTICS = 0x08;
 
 /*
 */
@@ -290,7 +289,8 @@ public class DataloggerService extends Service implements SensorEventListener {
                 		Log.e("AccelerometerLoggerService.ServiceHandler", "Bundle is null");
                 		stopSelf();
                 	} else {
-	                	DataloggerStartParams dsp = (DataloggerStartParams)bundle.getParcelable(BUNDLE_PARCELLABLE_PARAMS);
+        				bundle.setClassLoader(getClassLoader());
+	                	DataloggerStartParams dsp = (DataloggerStartParams)bundle.getParcelable(BUNDLEKEY_PARCELLABLE_PARAMS);
 	                	if (dsp == null) {
     						Log.e("AccelerometerLoggerService.ServiceHandler", "params are null");
     					} else {
@@ -320,15 +320,15 @@ public class DataloggerService extends Service implements SensorEventListener {
         }
         
         private void sendStatusResponse(boolean statusIsNew) {
-        	DataloggerStatusParams params = new DataloggerStatusParams(logging, statusIsNew, mSensorRate, mLoggingType, mLogFilename);
+        	DataloggerStatusParams params = new DataloggerStatusParams(mIsLogging, statusIsNew, mSensorRate, mLoggingType, mLogFilename);
         	Bundle bundle = new Bundle();
 //        	bundle.setClassLoader(getClassLoader());
 //        	bundle.putSerializable(BUNDLE_PARCELLABLE_PARAMS, params);
-        	bundle.putParcelable(BUNDLE_PARCELLABLE_PARAMS, params);
+        	bundle.putParcelable(BUNDLEKEY_PARCELLABLE_PARAMS, params);
+        	Message msg = Message.obtain(null, MSG_RESPONSE_STATUS);
+        	msg.setData(bundle);
             for (int i=mClients.size()-1; i>=0; i--) {
                 try {
-                	Message msg = Message.obtain(null, MSG_RESPONSE_STATUS);
-                	msg.setData(bundle);
                     mClients.get(i).send(msg);
                 } catch (RemoteException e) {
                     // The client is dead.  Remove it from the list;
@@ -340,10 +340,14 @@ public class DataloggerService extends Service implements SensorEventListener {
         }
         
         private void sendSensorEvent(SensorEvent event) {
+        	Bundle bundle = new Bundle();
+        	bundle.putLong(BUNDLEKEY_SENSOREVENT_TIMESTAMP, event.timestamp);
+        	bundle.putFloatArray(BUNDLEKEY_SENSOREVENT_VALUES, event.values);
+        	Message msg = Message.obtain(null, MSG_RESPONSE_SENSOREVENT);
+        	msg.setData(bundle);
             for (int i=mClients.size()-1; i>=0; i--) {
                 try {
-                    mClients.get(i).send(Message.obtain(null, MSG_RESPONSE_SENSOREVENT, event));
-                    
+                    mClients.get(i).send(msg);
                 } catch (RemoteException e) {
                     // The client is dead.  Remove it from the list;
                     // we are going through the list from back to front
@@ -356,7 +360,7 @@ public class DataloggerService extends Service implements SensorEventListener {
         private void sendStatisticsEvent(int eventsCount, float totalRate, float latestRate) {
         	DataloggerStatisticsParams params = new DataloggerStatisticsParams(eventsCount, totalRate, latestRate);
         	Bundle bundle = new Bundle();
-        	bundle.putParcelable(BUNDLE_PARCELLABLE_PARAMS, params);
+        	bundle.putParcelable(BUNDLEKEY_PARCELLABLE_PARAMS, params);
             for (int i=mClients.size()-1; i>=0; i--) {
                 try {
                     mClients.get(i).send(Message.obtain(null, MSG_RESPONSE_SENSOREVENT, bundle));
@@ -456,11 +460,11 @@ public class DataloggerService extends Service implements SensorEventListener {
 		    SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd_HH-mm-ss", Locale.US);
 		    Date now = new Date();
 		    mLogFilename = formatter.format(now) + ".txt";
-	        logFile = new File(logDir.getAbsolutePath(), mLogFilename);
+		    mLogFile = new File(logDir.getAbsolutePath(), mLogFilename);
 	        try {
-	        	logOutputStream = new FileOutputStream(logFile);
-		        logWriter = new PrintWriter(logOutputStream);
-		        logWriter.format(
+	        	mLogOutputStream = new FileOutputStream(mLogFile);
+	        	mLogWriter = new PrintWriter(mLogOutputStream);
+	        	mLogWriter.format(
 		        	"%s\t%s\t%s\t%s\n", 
 		        	getString(R.string.label_time), 
 		        	getString(R.string.label_x_axis), 
@@ -473,12 +477,12 @@ public class DataloggerService extends Service implements SensorEventListener {
 	        }    
 		} else {
 			// Not logging to file
-			logWriter = null;
-			logOutputStream = null;
+			mLogWriter = null;
+			mLogOutputStream = null;
 		}
 		
 		// Here we know logging is going to start
-		logging = true;
+		mIsLogging = true;
 		
         // Create a notification
         notificationStart();
@@ -501,9 +505,9 @@ public class DataloggerService extends Service implements SensorEventListener {
 			mSensorManager.unregisterListener(this);
     	}
 		notificationEnd();
-		logging = false;
-		logWriter = null;
-		logOutputStream = null;
+		mIsLogging = false;
+		mLogWriter = null;
+		mLogOutputStream = null;
     }
 	
 	@Override
@@ -518,15 +522,13 @@ public class DataloggerService extends Service implements SensorEventListener {
         try {
         	
         	// Write to file, if writing to file is desired
-        	if (logWriter != null) {
+        	if (mLogWriter != null) {
 //    			Log.v("AccelerometerLoggerService", "saving to file");
-	        	logWriter.print(event.timestamp);
+        		mLogWriter.print(event.timestamp);
 	        	for (int i=0;i<event.values.length;i++)
-	        		logWriter.format("\t%f", event.values[i]);
-	        	logWriter.println();
+	        		mLogWriter.format("\t%f", event.values[i]);
+	        	mLogWriter.println();
     		}
-        	
-        	Intent intent = null;
         	
         	// Send a notification to the main window, if that's what is called for
     		if ((mLoggingType & LOGTYPE_GRAPH) > 0) {
@@ -555,12 +557,6 @@ public class DataloggerService extends Service implements SensorEventListener {
         		mUpdateStatisticsRatio = Math.max((int)sensorRateTotal/2,1); 
     		}
         	
-    		// If there is an intent to send, do send it
-    		if (intent != null ) {
-    			//~ Log.v("AccelerometerLoggerService", "broadcasting intent");
-    			LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
-    		}
-    		
         } catch (Exception e) {
             e.printStackTrace();
         }
