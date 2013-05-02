@@ -66,6 +66,8 @@ public class DataloggerService extends Service implements SensorEventListener {
     
     private int mUpdateStatisticsRatio = UPDATE_STATISTICS_EVERY_INITIAL;
 
+    public static final String BUNDLE_PARCELLABLE_PARAMS = "com.atlarge.motionlog.BUNDLE_PARCELLABLE_PARAMS";
+    
     /** Keeps track of all current registered clients. */
     ArrayList<Messenger> mClients = new ArrayList<Messenger>();
 
@@ -244,23 +246,34 @@ public class DataloggerService extends Service implements SensorEventListener {
                     mClients.remove(msg.replyTo);
                     break;
                 case MSG_COMMAND_STARTLOGGING:
-                	DataloggerStartParams dsp = (DataloggerStartParams)msg.obj;
-					Log.d("AccelerometerLoggerService", "MSG_COMMAND_STARTLOGGING command received");
-					// Pull out the update rate from the intent
-					Log.d("AccelerometerLoggerService", String.format("Old sensor rate: %d, ", mSensorRate));
-	                mSensorRate = dsp.getSensorUpdateDelay();
-					Log.d("AccelerometerLoggerService", String.format("New sensor rate: %d, ", mSensorRate));
-					mLoggingType = dsp.getLoggingType();
-					Log.d("AccelerometerLoggerService", String.format("New logging type: %d\n", mLoggingType));
-					startLogging();
-                	sendStatusResponse(true);
-                    break;
+					Log.d("AccelerometerLoggerService.ServiceHandler", "MSG_COMMAND_STARTLOGGING command received");
+                	Bundle bundle =  msg.getData();
+                	if (bundle==null) {
+                		Log.e("AccelerometerLoggerService.ServiceHandler", "Bundle is null");
+                		stopSelf();
+                	} else {
+	                	DataloggerStartParams dsp = (DataloggerStartParams)bundle.getParcelable(BUNDLE_PARCELLABLE_PARAMS);
+	                	if (dsp == null) {
+    						Log.e("AccelerometerLoggerService.ServiceHandler", "params are null");
+    					} else {
+							// Pull out the update rate from the intent
+							Log.d("AccelerometerLoggerService", String.format("Old sensor rate: %d, ", mSensorRate));
+			                mSensorRate = dsp.getSensorUpdateDelay();
+							Log.d("AccelerometerLoggerService", String.format("New sensor rate: %d, ", mSensorRate));
+							mLoggingType = dsp.getLoggingType();
+							Log.d("AccelerometerLoggerService", String.format("New logging type: %d\n", mLoggingType));
+							startLogging();
+		                	sendStatusResponse(true);
+		                    break;
+    					}
+                	}
                 case MSG_COMMAND_STOPLOGGING:
 					Log.d("AccelerometerLoggerService", "MSG_COMMAND_STOPLOGGING command received");
 					stopLogging();
                 	sendStatusResponse(true);
                     break;
                 case MSG_COMMAND_GETSTATUS:
+					Log.d("AccelerometerLoggerService.ServiceHandler", "MSG_COMMAND_GETSTATUS command received");
                 	sendStatusResponse(false);
                     break;
                 default:
@@ -270,9 +283,11 @@ public class DataloggerService extends Service implements SensorEventListener {
         
         private void sendStatusResponse(boolean statusIsNew) {
         	DataloggerStatusParams params = new DataloggerStatusParams(logging, statusIsNew, mSensorRate, mLoggingType, mLogFilename);
+        	Bundle bundle = new Bundle();
+        	bundle.putParcelable(BUNDLE_PARCELLABLE_PARAMS, params);
             for (int i=mClients.size()-1; i>=0; i--) {
                 try {
-                    mClients.get(i).send(Message.obtain(null, MSG_RESPONSE_STATUS, params));
+                    mClients.get(i).send(Message.obtain(null, MSG_RESPONSE_STATUS, bundle));
                 } catch (RemoteException e) {
                     // The client is dead.  Remove it from the list;
                     // we are going through the list from back to front
@@ -298,9 +313,11 @@ public class DataloggerService extends Service implements SensorEventListener {
         
         private void sendStatisticsEvent(int eventsCount, float totalRate, float latestRate) {
         	DataloggerStatisticsParams params = new DataloggerStatisticsParams(eventsCount, totalRate, latestRate);
+        	Bundle bundle = new Bundle();
+        	bundle.putParcelable(BUNDLE_PARCELLABLE_PARAMS, params);
             for (int i=mClients.size()-1; i>=0; i--) {
                 try {
-                    mClients.get(i).send(Message.obtain(null, MSG_RESPONSE_SENSOREVENT, params));
+                    mClients.get(i).send(Message.obtain(null, MSG_RESPONSE_SENSOREVENT, bundle));
                 } catch (RemoteException e) {
                     // The client is dead.  Remove it from the list;
                     // we are going through the list from back to front

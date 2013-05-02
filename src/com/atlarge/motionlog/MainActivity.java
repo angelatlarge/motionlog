@@ -169,19 +169,30 @@ public class MainActivity extends Activity  implements
 	class IncomingHandler extends Handler {
 		@Override
 		public void handleMessage(Message msg) {
+			Log.d("MainActivity.IncomingHandler", "handleMessage()");
 			switch (msg.what) {
 			case DataloggerService.MSG_RESPONSE_STATUS:
-				DataloggerService.DataloggerStatusParams params = (DataloggerService.DataloggerStatusParams)msg.obj; 
-		  		mIsLogging = params.getLogging();
-		  		mSensorUpdateSpeed = params.getSensorUpdateDelay();
-		  		mLogTargetType = params.getLoggingType();
-		  		mLogFilename = params.getFilename();
-				updateUI();
-				if (params.getStatusChanged()) {
-					if (mIsLogging) {
-						Toast.makeText(MainActivity.this, "Logging stopped", Toast.LENGTH_SHORT).show();
+				Bundle bundle = msg.getData();
+				Log.d("MainActivity.IncomingHandler", "handleMessage(): MSG_RESPONSE_STATUS");
+				if (bundle==null) {
+					Log.d("MainActivity.IncomingHandler", "bundle is null");
+				} else {
+					DataloggerService.DataloggerStatusParams params = (DataloggerService.DataloggerStatusParams)bundle.getParcelable(DataloggerService.BUNDLE_PARCELLABLE_PARAMS);
+					if (params == null) {
+						Log.e("MainActivity.IncomingHandler", "params are null");
 					} else {
-						Toast.makeText(MainActivity.this, "Logging started", Toast.LENGTH_SHORT).show();
+				  		mIsLogging = params.getLogging();
+				  		mSensorUpdateSpeed = params.getSensorUpdateDelay();
+				  		mLogTargetType = params.getLoggingType();
+				  		mLogFilename = params.getFilename();
+						updateUI();
+						if (params.getStatusChanged()) {
+							if (mIsLogging) {
+								Toast.makeText(MainActivity.this, "Logging stopped", Toast.LENGTH_SHORT).show();
+							} else {
+								Toast.makeText(MainActivity.this, "Logging started", Toast.LENGTH_SHORT).show();
+							}
+						}
 					}
 				}
 				break;
@@ -475,7 +486,10 @@ public class MainActivity extends Activity  implements
 			}
 		}
 		
-		Message msg = Message.obtain(null, DataloggerService.MSG_COMMAND_STARTLOGGING, new DataloggerService.DataloggerStartParams(mSensorUpdateSpeed, mLogTargetType));
+		DataloggerService.DataloggerStartParams params = new DataloggerService.DataloggerStartParams(mSensorUpdateSpeed, mLogTargetType);
+    	Bundle bundle = new Bundle();
+    	bundle.putParcelable(DataloggerService.BUNDLE_PARCELLABLE_PARAMS, params);
+		Message msg = Message.obtain(null, DataloggerService.MSG_COMMAND_STARTLOGGING, bundle);
 		msg.replyTo = mMessenger;
 		try {
 			mService.send(msg);
