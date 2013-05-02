@@ -173,10 +173,12 @@ public class MainActivity extends Activity  implements
 			switch (msg.what) {
 			case DataloggerService.MSG_RESPONSE_STATUS:
 				Bundle bundle = msg.getData();
+				bundle.setClassLoader(getClassLoader());
 				Log.d("MainActivity.IncomingHandler", "handleMessage(): MSG_RESPONSE_STATUS");
 				if (bundle==null) {
 					Log.d("MainActivity.IncomingHandler", "bundle is null");
 				} else {
+//					DataloggerService.DataloggerStatusParams params = (DataloggerService.DataloggerStatusParams)bundle.getSerializable(DataloggerService.BUNDLE_PARCELLABLE_PARAMS);
 					DataloggerService.DataloggerStatusParams params = (DataloggerService.DataloggerStatusParams)bundle.getParcelable(DataloggerService.BUNDLE_PARCELLABLE_PARAMS);
 					if (params == null) {
 						Log.e("MainActivity.IncomingHandler", "params are null");

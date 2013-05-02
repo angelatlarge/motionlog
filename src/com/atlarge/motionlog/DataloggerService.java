@@ -3,6 +3,7 @@ package com.atlarge.motionlog;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -143,7 +144,7 @@ public class DataloggerService extends Service implements SensorEventListener {
 		}
 	}
 
-	protected static class DataloggerConfigurableParams extends DataloggerParams {
+	protected static class DataloggerConfigurableParams extends DataloggerParams implements Parcelable {
 		protected final int mSensorUpdateDelay;
 		protected final int mLoggingType;
 		
@@ -154,26 +155,53 @@ public class DataloggerService extends Service implements SensorEventListener {
 		public int getSensorUpdateDelay() { return mSensorUpdateDelay; }
 		public int getLoggingType() { return mLoggingType; }		
 
+		public static final Parcelable.Creator<DataloggerParams> CREATOR
+			= new Parcelable.Creator<DataloggerParams>() {
+				public DataloggerConfigurableParams createFromParcel(Parcel in) {
+						return new DataloggerConfigurableParams(in);
+				}
+			public DataloggerConfigurableParams[] newArray(int size) {
+					return new DataloggerConfigurableParams[size];
+			}
+		};
+	
 		DataloggerConfigurableParams(Parcel in) {
+			super(in);
 			mSensorUpdateDelay = in.readInt();
 			mLoggingType = in.readInt();
 		}
 		
 		@Override
 		public void writeToParcel(Parcel dest, int flags) {
+			super.writeToParcel(dest, flags);
 			dest.writeInt(mSensorUpdateDelay);
 			dest.writeInt(mLoggingType);
 		}
 		
 	};
 
-	public static class DataloggerStartParams extends DataloggerConfigurableParams {
+	public static class DataloggerStartParams extends DataloggerConfigurableParams implements Parcelable {
 		public DataloggerStartParams(int sensorUpdateDelay, int loggingType) {
 			super(sensorUpdateDelay, loggingType);
 		}
+		
+		public static final Parcelable.Creator<DataloggerStartParams> CREATOR
+		= new Parcelable.Creator<DataloggerStartParams>() {
+			public DataloggerStartParams createFromParcel(Parcel in) {
+					return new DataloggerStartParams(in);
+			}
+		public DataloggerStartParams[] newArray(int size) {
+				return new DataloggerStartParams[size];
+		}
+		};
+		
+		DataloggerStartParams(Parcel in) {
+			super(in);
+		}
+
 	};
 		
-	public static class DataloggerStatusParams extends DataloggerConfigurableParams {
+	public static class DataloggerStatusParams extends DataloggerConfigurableParams implements Parcelable {
 		protected boolean mLogging;
 		protected boolean mStatusChanged;
 		protected String mFilename;
@@ -186,6 +214,16 @@ public class DataloggerService extends Service implements SensorEventListener {
 		public boolean getLogging() { return mLogging; }
 		public boolean getStatusChanged() { return mStatusChanged; }
 		public String getFilename() { return mFilename; }
+		
+		public static final Parcelable.Creator<DataloggerStatusParams> CREATOR
+			= new Parcelable.Creator<DataloggerStatusParams>() {
+				public DataloggerStatusParams createFromParcel(Parcel in) {
+						return new DataloggerStatusParams(in);
+				}
+			public DataloggerStatusParams[] newArray(int size) {
+					return new DataloggerStatusParams[size];
+			}
+		};
 		
 		DataloggerStatusParams(Parcel in) {
 			super(in);
@@ -284,10 +322,14 @@ public class DataloggerService extends Service implements SensorEventListener {
         private void sendStatusResponse(boolean statusIsNew) {
         	DataloggerStatusParams params = new DataloggerStatusParams(logging, statusIsNew, mSensorRate, mLoggingType, mLogFilename);
         	Bundle bundle = new Bundle();
+//        	bundle.setClassLoader(getClassLoader());
+//        	bundle.putSerializable(BUNDLE_PARCELLABLE_PARAMS, params);
         	bundle.putParcelable(BUNDLE_PARCELLABLE_PARAMS, params);
             for (int i=mClients.size()-1; i>=0; i--) {
                 try {
-                    mClients.get(i).send(Message.obtain(null, MSG_RESPONSE_STATUS, bundle));
+                	Message msg = Message.obtain(null, MSG_RESPONSE_STATUS);
+                	msg.setData(bundle);
+                    mClients.get(i).send(msg);
                 } catch (RemoteException e) {
                     // The client is dead.  Remove it from the list;
                     // we are going through the list from back to front
