@@ -7,7 +7,7 @@
 	>
 
 		<CheckBoxPreference
-			android:key="pref_logwarning"
+			android:key="@string/prefkey_logwarn"
 			android:title="@string/prefs_title_logwarn"
 			android:summary="@string/prefs_summary_logwarn"
 			android:defaultValue="true" 

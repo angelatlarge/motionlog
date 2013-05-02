@@ -1,6 +1,7 @@
 package com.atlarge.motionlog;
 
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.DialogFragment;
@@ -53,7 +54,6 @@ public class MainActivity extends Activity  implements
 	private GraphViewBase[] mGVs = null;
 	private TextView[] mGVlabels = null;
 	private static final boolean LOGCONFIRMATIONPROMPT_DEFAULT = true;
-	private boolean mLogConfirmationPrompt = LOGCONFIRMATIONPROMPT_DEFAULT;
 	private Bitmap mFileLoggingBitmap = null;
 	private int counter = 0;
 	private IconicAdapter mSpeedSpinnerAdapter;
@@ -207,7 +207,7 @@ public class MainActivity extends Activity  implements
 			actionBar.hide();	
 	
 		// Read the preferences
-		readPreferences();
+		PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 		
 		// Create the GraphicViews
 		createGraphViews();
@@ -267,11 +267,6 @@ public class MainActivity extends Activity  implements
 		return true;
 	}
 	
-	private void readPreferences() {
-		SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
-		boolean mLogConfirmationPrompt = sharedPref.getBoolean(getString(R.string.saved_logconfirmationprompt), LOGCONFIRMATIONPROMPT_DEFAULT);		
-	}
-	
 	@Override
 	public void onPause() {
 		super.onPause();
@@ -329,29 +324,50 @@ public class MainActivity extends Activity  implements
 		}
 	}
 	
+	private boolean getUseLogConfirmationPrompt() {
+		SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+		boolean value = sharedPref.getBoolean(getString(R.string.prefkey_logwarn), true);
+		Log.d("MainActivity", "useLogConfirmationPrompt returning " + (value?"true":"false"));
+		return value;
+	}
+	
+	private void setUseLogConfirmationPrompt(boolean value) {
+		Log.d("MainActivity", "setting useLogConfirmationPrompt to " + (value?"true":"false"));
+		SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+		SharedPreferences.Editor editor = sharedPref.edit();
+		editor.putBoolean(getString(R.string.prefkey_logwarn), value);
+		editor.commit();
+	}
+	
 	public void startStopButtonClick(View view) {
 		Log.d("MainActivity", "startStopButton clicked");
 		
 		if (mIsLogging) {
 			stopLogging();
 		} else {
-			if (mLogConfirmationPrompt && ((mLogTargetType & AccelerometerLoggerService.LOGTYPE_FILE) > 0)) {
-			    DialogFragment newFragment = new LogConfirmationDialogFragment();
-			    newFragment.show(getFragmentManager(), null);
+			if (
+				((mLogTargetType & AccelerometerLoggerService.LOGTYPE_FILE) > 0)
+				&&
+				getUseLogConfirmationPrompt()
+			){ // Logging to file
+				DialogFragment newFragment = new LogConfirmationDialogFragment();
+				newFragment.show(getFragmentManager(), null);
 			} else {
 				startLogging();
 			}
 		}				
 	}
 	
+	
+	
 	@Override
 	public void onDialogPositiveClick(DialogFragment dialog, boolean doNotAskAgain) {
+		Log.d("MainActivity", "onDialogPositiveClick");
 		if (doNotAskAgain) {
-			mLogConfirmationPrompt = false;
-			SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
-			SharedPreferences.Editor editor = sharedPref.edit();
-			editor.putBoolean(getString(R.string.saved_logconfirmationprompt), false);
-			editor.commit();
+			Log.d("MainActivity", "doNotAskAgain is true");
+			setUseLogConfirmationPrompt(false);
+		} else {
+			Log.d("MainActivity", "doNotAskAgain is false");
 		}
 		
 		startLogging();
@@ -359,8 +375,15 @@ public class MainActivity extends Activity  implements
 
 	@Override
 	public void onDialogNegativeClick(DialogFragment dialog, boolean doNotAskAgain) {
-		ToggleButton btn = (ToggleButton)findViewById(R.id.button_startstop);
-		btn.setChecked(false);
+		Log.d("MainActivity", "onDialogNegativeClick");
+		if (doNotAskAgain) {
+			Log.d("MainActivity", "doNotAskAgain is true");
+			this.setUseLogConfirmationPrompt(false);
+		} else {
+			Log.d("MainActivity", "doNotAskAgain is false");
+		}
+		ToggleButton startStopButton = (ToggleButton)findViewById(R.id.button_startstop);
+		startStopButton.setChecked(false);
 	}
 
 	@Override
@@ -368,14 +391,7 @@ public class MainActivity extends Activity  implements
 		ToggleButton btn = (ToggleButton)findViewById(R.id.button_startstop);
 		btn.setChecked(false);
 	}
-	
-	private void savePreferences() {
-		SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
-		SharedPreferences.Editor editor = sharedPref.edit();
-		// TODO: Write this
-		editor.commit();
-	}
-	
+		
 	private void startLogging() {
 		// Clear the graph views
 		if (mSingleGraph) {
@@ -618,7 +634,9 @@ public class MainActivity extends Activity  implements
 	}		
 	
 	public void buttonsettings_click(View view) {
+		Log.d("MainActivity", "Log prompt is " + (getUseLogConfirmationPrompt()?"true":"false"));
 		showSettings();
+		Log.d("MainActivity", "Log prompt is " + (getUseLogConfirmationPrompt()?"true":"false"));
 	}
 
 	private void updateLoggingStatistics(StatusUpdatePacket wassup) {

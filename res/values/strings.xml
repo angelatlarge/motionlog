@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
+	<!-- Not translatable -->
+	<string name="prefkey_logwarn">prefkey_logwarn</string>
+	
+	<!-- Translatable -->
     <string name="app_name">Motionlog</string>
     <string name="action_settings">Settings</string>
     <string name="button_start">Start</string>
@@ -9,7 +12,6 @@
     <string name="proceed">Proceed</string>
     <string name="cancel">Cancel</string>
     <string name="donotaskagain">Do not ask again</string>
-    <string name="saved_logconfirmationprompt">atlarge.motionlog.logconfirmprompt</string>
     <string name="log_confirmation_message">Saving to accelerometer data to log file is a battery-intensive operation. Your battery may get drained very quickly.</string>
 	<string name="menu_SENSORDELAY_NORMAL">Normal speed</string>
 	<string name="menu_SENSORDELAY_UI">Increased speed</string>
@@ -46,6 +48,5 @@
 	<string name="label_statistics_filename_short_T"></string>
 	<string name="label_statistics_totalrate_short_T">%.2f evt/sec</string>
 	<string name="label_statistics_latestrate_short_T"></string>
-		
 	
 </resources>

@@ -1,5 +1,4 @@
 Deal with confirmation issue
-Do file/screen statistics too
 ? Separate the service-type logging from app-type logging ?
 Test the app - logging
 Make the menu icons semi-transparent
