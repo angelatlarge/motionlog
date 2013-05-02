@@ -149,12 +149,7 @@ public class MainActivity extends Activity  implements
 		super.onCreate(savedInstanceState);
 		Log.d("MainActivity", "onCreate");
 		setContentView(R.layout.activity_main);
-		IntentFilter filter = new IntentFilter();
-		filter.addAction(AccelerometerLoggerService.ACTION_STATUS_LOGGING);
-		filter.addAction(AccelerometerLoggerService.ACTION_STATUS_NOTLOGGING);
-		filter.addAction(AccelerometerLoggerService.ACTION_SENSORCHANGED);
-		filter.addAction(AccelerometerLoggerService.ACTION_STATISTICS);
-		LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver, filter);
+		
 		
 		// The speed spinner
 		mSpeedSpinnerMapping = 
@@ -213,6 +208,40 @@ public class MainActivity extends Activity  implements
 
 	}
 
+	@Override
+	public void onPause() {
+		super.onPause();
+		Log.d("MainActivity", "onPause");
+		
+		if (!mIsLogging)
+			stopService();
+		unregisterServiceMsgReceiver();
+	}
+	
+	@Override
+	public void onResume() {
+		super.onResume();  // Always call the superclass method first
+		Log.d("MainActivity", "onResume");
+		
+		// Register as broadcast receiver, which is how we communicated with our service
+		registerServiceMsgReceiver();
+		// Connect to our service, which will update the UI
+		connectToService();
+
+	}
+	
+	private void registerServiceMsgReceiver() {
+		IntentFilter filter = new IntentFilter();
+		filter.addAction(AccelerometerLoggerService.ACTION_STATUS_LOGGING);
+		filter.addAction(AccelerometerLoggerService.ACTION_STATUS_NOTLOGGING);
+		filter.addAction(AccelerometerLoggerService.ACTION_SENSORCHANGED);
+		filter.addAction(AccelerometerLoggerService.ACTION_STATISTICS);
+		LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver, filter);
+	}		
+	
+	private void unregisterServiceMsgReceiver() {
+		LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
+	}
 	private void createGraphViews() {
 		View toolbar = findViewById(R.id.toolbar);
 		LinearLayout layout  = (LinearLayout)toolbar.getParent();
@@ -264,25 +293,6 @@ public class MainActivity extends Activity  implements
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
-	}
-	
-	@Override
-	public void onPause() {
-		super.onPause();
-		Log.d("MainActivity", "onPause");
-		
-		if (!mIsLogging)
-			stopService();
-	}
-	
-	@Override
-	public void onResume() {
-		super.onResume();  // Always call the superclass method first
-		Log.d("MainActivity", "onResume");
-		
-		// Connect to our service, which will update the UI
-		connectToService();
-
 	}
 	
 	@Override
@@ -643,7 +653,7 @@ public class MainActivity extends Activity  implements
 	}
 
 	private void updateLoggingStatistics(StatusUpdatePacket wassup) {
-		Log.d("MainActivity", "updateLoggingStatus()");
+		Log.d("MainActivity", "updateLoggingStatistics()");
 		StringBuilder sb = new StringBuilder();
 		
 		if ( (mStatsTextView != null) && (mStatsStrings != null) ) {
