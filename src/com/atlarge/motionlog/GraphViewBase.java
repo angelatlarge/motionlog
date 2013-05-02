@@ -134,19 +134,21 @@ public class GraphViewBase extends View {
 	}
 
 	protected void ensureGridExists() {
-		mGridBitmap = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
-		mGridCanvas = new Canvas();
-		mGridCanvas.setBitmap(mGridBitmap);
-		mGridBitmap.eraseColor(Color.TRANSPARENT);
-		
-		GraphTickMarks gtm = new GraphTickMarks(-mMaxRange[0], mMaxRange[0], (int)(mHeight/DEFAULT_GRID), false);
-		mGridLogicalSize = gtm.tickSpacing();
-		mGridScreenWidth = mHeight/(gtm.graphMax() - gtm.graphMin()) * mGridLogicalSize;
-		mGridLegendDecimals = gtm.fractionalDigits();
-		
-		Log.d("GraphViewBase", String.format("recreateGrid: mGridLogicalSize %f, mGridScreenWidth %f, max-min: %f/%f ", mGridLogicalSize, mGridScreenWidth, gtm.graphMax(), gtm.graphMin())); 
-		
-		drawGrid(mGridCanvas);
+		if (mGridBitmap==null) {
+			mGridBitmap = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
+			mGridCanvas = new Canvas();
+			mGridCanvas.setBitmap(mGridBitmap);
+			mGridBitmap.eraseColor(Color.TRANSPARENT);
+			
+			GraphTickMarks gtm = new GraphTickMarks(-mMaxRange[0], mMaxRange[0], (int)(mHeight/DEFAULT_GRID), false);
+			mGridLogicalSize = gtm.tickSpacing();
+			mGridScreenWidth = mHeight/(gtm.graphMax() - gtm.graphMin()) * mGridLogicalSize;
+			mGridLegendDecimals = gtm.fractionalDigits();
+			
+			Log.d("GraphViewBase", String.format("recreateGrid: mGridLogicalSize %f, mGridScreenWidth %f, max-min: %f/%f ", mGridLogicalSize, mGridScreenWidth, gtm.graphMax(), gtm.graphMin())); 
+			
+			drawGrid(mGridCanvas);
+		}
 	}
 	
 	protected void drawGrid(Canvas canvas) {
