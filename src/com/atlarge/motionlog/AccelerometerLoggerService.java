@@ -8,6 +8,7 @@ import java.util.Date;
 import java.util.Locale;
 
 import android.annotation.SuppressLint;
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -126,32 +127,37 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 
 		// Need to parse the intent for command
 		boolean forceNotifyFlag = false;
-	    Bundle extras = intent.getExtras();
-	    if(extras != null) {
-	    	int startCommand = extras.getInt(INTENTEXTRA_COMMAND, INTENTCOMMAND_RETURNSTATUS);
-			switch (startCommand) {
-			case INTENTCOMMAND_RETURNSTATUS:
-				// We don't process this command since we retun status every time anyway
-				Log.d("AccelerometerLoggerService", "INTENTCOMMAND_RETURNSTATUS command received");
-				break;
-			case INTENTCOMMAND_STARTLOGGING:
-				Log.d("AccelerometerLoggerService", "INTENTCOMMAND_STARTLOGGING command received");
-				// Pull out the update rate from the intent
-				Log.d("AccelerometerLoggerService", String.format("Old sensor rate: %d, ", mSensorRate));
-                mSensorRate = extras.getInt(INTENTEXTRA_UPDATERATE, DEFAULT_SENSOR_RATE);
-				Log.d("AccelerometerLoggerService", String.format("New sensor rate: %d, ", mSensorRate));
-				mLoggingType = extras.getInt(INTENTEXTRA_LOGGINGTYPE, DEFAULT_LOGTYPE);
-				Log.d("AccelerometerLoggerService", String.format("New logging type: %d\n", mLoggingType));
-				startLogging();
-				break;
-			case INTENTCOMMAND_STOPLOGGING:
-				Log.d("AccelerometerLoggerService", "INTENTCOMMAND_STOPLOGGING command received");
-				stopLogging();
-				break;
-			}
-			// Check the new notify flag
-			forceNotifyFlag =  extras.getBoolean(INTENTEXTRA_STATUS_FORCENOTIFYFLAG, false);
-	    }
+		if (intent == null) {
+			// This happens when our service gets killed
+			Log.e("AccelerometerLoggerService", "onStartCommand() with null intent");
+		} else {
+		    Bundle extras = intent.getExtras();
+		    if (extras != null) {
+		    	int startCommand = extras.getInt(INTENTEXTRA_COMMAND, INTENTCOMMAND_RETURNSTATUS);
+				switch (startCommand) {
+				case INTENTCOMMAND_RETURNSTATUS:
+					// We don't process this command since we retun status every time anyway
+					Log.d("AccelerometerLoggerService", "INTENTCOMMAND_RETURNSTATUS command received");
+					break;
+				case INTENTCOMMAND_STARTLOGGING:
+					Log.d("AccelerometerLoggerService", "INTENTCOMMAND_STARTLOGGING command received");
+					// Pull out the update rate from the intent
+					Log.d("AccelerometerLoggerService", String.format("Old sensor rate: %d, ", mSensorRate));
+	                mSensorRate = extras.getInt(INTENTEXTRA_UPDATERATE, DEFAULT_SENSOR_RATE);
+					Log.d("AccelerometerLoggerService", String.format("New sensor rate: %d, ", mSensorRate));
+					mLoggingType = extras.getInt(INTENTEXTRA_LOGGINGTYPE, DEFAULT_LOGTYPE);
+					Log.d("AccelerometerLoggerService", String.format("New logging type: %d\n", mLoggingType));
+					startLogging();
+					break;
+				case INTENTCOMMAND_STOPLOGGING:
+					Log.d("AccelerometerLoggerService", "INTENTCOMMAND_STOPLOGGING command received");
+					stopLogging();
+					break;
+				}
+				// Check the new notify flag
+				forceNotifyFlag =  extras.getBoolean(INTENTEXTRA_STATUS_FORCENOTIFYFLAG, false);
+		    }
+		}
 
 		performStatusUpdate(forceNotifyFlag);
 		
@@ -360,8 +366,10 @@ public class AccelerometerLoggerService extends Service implements SensorEventLi
 		// Gets an instance of the NotificationManager service
 		NotificationManager mNotifyMgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 		// Builds the notification and issues it.
-		mNotifyMgr.notify(mNotificationId, mBuilder.build());
-		
+		Notification notification = mBuilder.build();
+		mNotifyMgr.notify(mNotificationId, notification);
+		// Set foreground
+		startForeground (0, notification);		
 	}
 	
 	private void notificationEnd() {

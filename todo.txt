@@ -1,7 +1,12 @@
-Deal with confirmation issue
+Check on other screens
+Make the screen only thing work without the service
+Deal with screen only and screen+file logging
+Deal with wake lock issue
+Service sensor event does not respect delay
+
+Testing
+	
 ? Separate the service-type logging from app-type logging ?
-Test the app - logging
-Make the menu icons semi-transparent
 Make sure that the service is killed when app is paused/killed when logging to screen only
 Make sure that the right things happen when app is restored
 Make an installation
@@ -20,3 +25,4 @@ Load load file on finish
 X axis labels
 Scroll
 Remove settings buttons while logging?
+Make the menu icons semi-transparent
