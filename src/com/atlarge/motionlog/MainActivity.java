@@ -102,11 +102,10 @@ public class MainActivity extends Activity  implements
 			// Process the intent action
 	  		if (intent.getAction().equals(AccelerometerLoggerService.ACTION_STATUS_LOGGING)) {
 				Log.d("MainActivity", "onReceive: ACTION_STATUS_LOGGING");		
-				if(extras != null) {
-					mSensorUpdateSpeed = extras.getInt(AccelerometerLoggerService.INTENTEXTRA_UPDATERATE, AccelerometerLoggerService.DEFAULT_SENSOR_RATE);
-				}
 		  		mIsLogging = true;
 				if(extras != null) {
+					mSensorUpdateSpeed = extras.getInt(AccelerometerLoggerService.INTENTEXTRA_UPDATERATE, AccelerometerLoggerService.DEFAULT_SENSOR_RATE);
+					mLogTargetType = extras.getInt(AccelerometerLoggerService.INTENTEXTRA_LOGGINGTYPE, AccelerometerLoggerService.DEFAULT_LOGTYPE);
 					Object objFilename = extras.get(AccelerometerLoggerService.INTENTEXTRA_LOGFILENAME);
 					if (objFilename != null) {
 						mLogFilename = (String)objFilename;
@@ -578,6 +577,10 @@ public class MainActivity extends Activity  implements
 				updateLoggingStatistics(null);			
 			}
 		}	
+		
+		// Update the button status
+		ToggleButton startStopButton = (ToggleButton)findViewById(R.id.button_startstop);
+		startStopButton.setChecked(mIsLogging);
 	}
 	
 	@Override
