@@ -17,9 +17,9 @@
 	<string name="menu_SENSORDELAY_UI">Increased speed</string>
 	<string name="menu_SENSORDELAY_GAME">High speed</string>
 	<string name="menu_SENSORDELAY_FASTEST">Very high speed</string>
-	<string name="menu_CAPTURETARGET_GRAPH">Capture as graph</string>
-	<string name="menu_CAPTURETARGET_FILE">Capture as file</string>
-	<string name="menu_CAPTURETARGET_BOTH">Capture both</string>
+	<string name="menu_CAPTURETARGET_GRAPH">Capture to screen</string>
+	<string name="menu_CAPTURETARGET_FILE">Capture to file</string>
+	<string name="menu_CAPTURETARGET_BOTH">Capture file and screen</string>
     <string-array name="sensor_axis_names">
         <item>@string/label_x_axis</item>
         <item>@string/label_y_axis</item>
@@ -29,7 +29,7 @@
 	<string name="prefs_title_logwarn">Battery warning</string>
 	<string name="prefs_summary_logwarn">Prompt when starting a potentially battery-killing logging activity</string>
 	
-	<string name="notification_title">Motionlog logging</string>
+	<string name="notification_title">Motionlog logging to file</string>
 	<string name="notification_text">touch to adjust</string>
 	<string name="label_time">Time (ns)</string>
 	<string name="label_x_axis">X axis</string>

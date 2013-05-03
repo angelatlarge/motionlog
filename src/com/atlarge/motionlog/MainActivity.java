@@ -55,6 +55,7 @@ public class MainActivity extends Activity  implements
 {
 	private boolean mSingleGraph = false;
 	private boolean mIsLogging = false;
+	private boolean mBypassService = false;
 	private int mSensorUpdateSpeed = DataloggerService.DEFAULT_SENSOR_RATE;
 	private int mLogTargetType = DataloggerService.LOGTYPE_SCREEN;
 	private GraphViewBase[] mGVs = null;
@@ -182,23 +183,25 @@ public class MainActivity extends Activity  implements
 			switch (msg.what) {
 			case DataloggerService.MSG_RESPONSE_STATUS:
 				Log.d("MainActivity.IncomingHandler", "handleMessage(): MSG_RESPONSE_STATUS");
-				if (bundle==null) {
-					Log.d("MainActivity.IncomingHandler", "bundle is null");
-				} else {
-					DataloggerService.DataloggerStatusParams params = (DataloggerService.DataloggerStatusParams)bundle.getParcelable(DataloggerService.BUNDLEKEY_PARCELLABLE_PARAMS);
-					if (params == null) {
-						Log.e("MainActivity.IncomingHandler", "params are null");
+				if (!mBypassService) {
+					if (bundle==null) {
+						Log.d("MainActivity.IncomingHandler", "bundle is null");
 					} else {
-				  		mIsLogging = params.getLogging();
-				  		mSensorUpdateSpeed = params.getSensorUpdateDelay();
-				  		mLogTargetType = params.getLoggingType();
-				  		mLogFilename = params.getFilename();
-						updateUI();
-						if (params.getStatusChanged()) {
-							if (mIsLogging) {
-								Toast.makeText(MainActivity.this, "Logging started", Toast.LENGTH_SHORT).show();
-							} else {
-								Toast.makeText(MainActivity.this, "Logging stopped", Toast.LENGTH_SHORT).show();
+						DataloggerService.DataloggerStatusParams params = (DataloggerService.DataloggerStatusParams)bundle.getParcelable(DataloggerService.BUNDLEKEY_PARCELLABLE_PARAMS);
+						if (params == null) {
+							Log.e("MainActivity.IncomingHandler", "params are null");
+						} else {
+							mIsLogging = params.getLogging();
+							mSensorUpdateSpeed = params.getSensorUpdateDelay();
+							mLogTargetType = params.getLoggingType();
+							mLogFilename = params.getFilename();
+							updateUI();
+							if (params.getStatusChanged()) {
+								if (mIsLogging) {
+									Toast.makeText(MainActivity.this, "Logging started", Toast.LENGTH_SHORT).show();
+								} else {
+									Toast.makeText(MainActivity.this, "Logging stopped", Toast.LENGTH_SHORT).show();
+								}
 							}
 						}
 					}
@@ -364,6 +367,10 @@ public class MainActivity extends Activity  implements
 		Log.d("MainActivity", "onResume");
 		
 		// Connect to our service, which will update the UI
+		if (mIsLogging && mBypassService) {
+			// We were logging without the service
+			startLocalLogging();
+		}
 		connectToService();
 	}
 
@@ -375,7 +382,16 @@ public class MainActivity extends Activity  implements
 		if (!mIsLogging) {
 			disconnectAndStopService();
 		} else {
-			unbindFromService();
+			// We are logging
+			if (mBypassService) {
+				// Local logging only. Kill the service
+				disconnectAndStopService();
+				// Stop the logging for now
+				stopLocalLogging();
+			} else {
+				// Service is logging. Unbind from notifications
+				unbindFromService();
+			}
 		}
 	}
 	
@@ -525,7 +541,21 @@ public class MainActivity extends Activity  implements
 		btn.setChecked(false);
 	}
 		
+	private void startLocalLogging() {
+		if (mSensorManager==null)
+			mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+		if (mAccelerometer==null)
+			mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+		mSensorManager.registerListener(this, mAccelerometer, mSensorUpdateSpeed);
+	}
+
+	private void stopLocalLogging() {
+		mSensorManager.unregisterListener(this);
+	}
+	
 	private void startLogging() {
+		Log.d("MainActivity", "stopLogging()");
+		
 		// Clear the graph views
 		if (mSingleGraph) {
 			mGVs[0].clear();
@@ -542,6 +572,7 @@ public class MainActivity extends Activity  implements
 			Message msg = Message.obtain(null, DataloggerService.MSG_COMMAND_STARTLOGGING);
 			msg.setData(bundle);
 			msg.replyTo = mMessenger;
+			mBypassService = false;		
 			try {
 				mService.send(msg);
 			} catch (RemoteException e) {
@@ -551,18 +582,17 @@ public class MainActivity extends Activity  implements
 			//~ Log.d("MainActivity", "Issued start logging command");
 		} else {
 			// Screen-only logging without the service
-			if (mSensorManager==null)
-				mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
-			if (mAccelerometer==null)
-				mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-			mSensorManager.registerListener(this, mAccelerometer, mSensorUpdateSpeed);
+			Log.d("MainActivity", String.format("Screen-only logging with speed %d", mSensorUpdateSpeed));
+			startLocalLogging();
 			mIsLogging = true;
+			mBypassService = true;
 			updateUI();
 		}
 	}
     
 	private void stopLogging() {
-		if (mUseServiceForScreenLogging || (mLogTargetType!=DataloggerService.LOGTYPE_SCREEN)) {
+		Log.d("MainActivity", "stopLogging()");
+		if (!mBypassService) {
 			// Communicate with the service via the startService command
 			Message msg = Message.obtain(null, DataloggerService.MSG_COMMAND_STOPLOGGING);
 			msg.replyTo = mMessenger;
@@ -575,8 +605,9 @@ public class MainActivity extends Activity  implements
 			Log.d("MainActivity", "Issued stop logging command");
 		} else {
 			// Screen-only logging without the service
-			mSensorManager.unregisterListener(this);
+			stopLocalLogging();
 			mIsLogging = false;
+			mBypassService = false;
 			updateUI();
 		}
 	}

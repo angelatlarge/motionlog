@@ -1,8 +1,13 @@
+Action bar for the settings screen: no way to get out without a back button
+Better start/stop button
+
+Add help pages?
 Service sensor event does not respect delay
 Add a wake lock option
-What happens when screen only capture is done - we do not sleep
-Better buttons
+Add an option to do service-type logging for screen as well?
 Make an installation
+Add option for specific delay
+
 ---
 Add orientation change
 Settings dialog: skipping graph updates
