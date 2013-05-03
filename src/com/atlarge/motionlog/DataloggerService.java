@@ -305,11 +305,11 @@ public class DataloggerService extends Service implements SensorEventListener {
     						Log.e("AccelerometerLoggerService.ServiceHandler", "params are null");
     					} else {
 							// Pull out the update rate from the intent
-							Log.d("AccelerometerLoggerService", String.format("Old sensor rate: %d, ", mSensorRate));
+							//~ Log.d("AccelerometerLoggerService", String.format("Old sensor rate: %d, ", mSensorRate));
 			                mSensorRate = dsp.getSensorUpdateDelay();
-							Log.d("AccelerometerLoggerService", String.format("New sensor rate: %d, ", mSensorRate));
+							//~ Log.d("AccelerometerLoggerService", String.format("New sensor rate: %d, ", mSensorRate));
 							mLoggingType = dsp.getLoggingType();
-							Log.d("AccelerometerLoggerService", String.format("New logging type: %d\n", mLoggingType));
+							//~ Log.d("AccelerometerLoggerService", String.format("New logging type: %d\n", mLoggingType));
 							startLogging();
 		                	sendStatusResponse(true);
 		                    break;
@@ -403,6 +403,17 @@ public class DataloggerService extends Service implements SensorEventListener {
 		Log.d("AccelerometerLoggerService", "onBind()");
         return mMessenger.getBinder();
     }
+
+    /**
+     * When binding to the service, we return an interface to our messenger
+     * for sending messages to the service.
+     * @return 
+     */
+    @Override
+    public boolean onUnbind(Intent intent) {
+		Log.d("AccelerometerLoggerService", "onUnbind()");
+		return false;
+    }
 	
 	@Override
 	public void onCreate() {
@@ -429,13 +440,7 @@ public class DataloggerService extends Service implements SensorEventListener {
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		Log.d("AccelerometerLoggerService", "onStartCommand()");
 
-		// Need to parse the intent for command
-		if (intent == null) {
-			// This happens when our service gets killed
-			Log.e("AccelerometerLoggerService", "onStartCommand() with null intent");
-		} else {
-			// Regular start command
-		}
+		// We don't do anything with intent
 
 		// If we get killed, after returning from here, restart
 		return START_STICKY;

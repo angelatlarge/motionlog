@@ -94,13 +94,14 @@ public class MainActivity extends Activity  implements
     
     private ServiceConnection mConnection = new ServiceConnection() {
 		public void onServiceConnected(ComponentName className, IBinder service) {
-			Log.d("MainActivity", "onServiceConnected()");
+			Log.d("MainActivity.ServiceConnection", "onServiceConnected()");
 			// This is called when the connection with the service has been
 			// established, giving us the service object we can use to
 			// interact with the service.  We are communicating with our
 			// service through an IDL interface, so get a client-side
 			// representation of that from the raw service object.
 			mService = new Messenger(service);
+			mIsBound = true;
 
 			// We want to monitor the service for as long as we are
 			// connected to it.
@@ -152,6 +153,7 @@ public class MainActivity extends Activity  implements
         }
 */
         public void onServiceDisconnected(ComponentName className) {
+			Log.d("MainActivity.ServiceConnection", "onServiceDisconnected()");
             // This is called when the connection with the service has been
             // unexpectedly disconnected -- that is, its process crashed.
             mService = null;
@@ -297,26 +299,6 @@ public class MainActivity extends Activity  implements
 
 	}
 
-	@Override
-	public void onPause() {
-		super.onPause();
-		Log.d("MainActivity", "onPause");
-		
-		if (!mIsLogging)
-			disconnectFromService();
-	}
-	
-	@Override
-	public void onResume() {
-		super.onResume();  // Always call the superclass method first
-		Log.d("MainActivity", "onResume");
-		
-		// Connect to our service, which will update the UI
-		connectToService();
-
-	}
-	
-		
 	private void createGraphViews() {
 		View toolbar = findViewById(R.id.toolbar);
 		LinearLayout layout  = (LinearLayout)toolbar.getParent();
@@ -335,7 +317,7 @@ public class MainActivity extends Activity  implements
         SensorManager mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
         Sensor mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         float maxRange = mAccelerometer.getMaximumRange();
-        Log.d("MainActivity", String.format("Accelerometer maximum range: %f", maxRange));        
+        //~ Log.d("MainActivity", String.format("Accelerometer maximum range: %f", maxRange));        
 		
 		DefaultColorIterator dci = new DefaultColorIterator();
 		for (int i=0;i<mGVs.length; i++) {
@@ -371,6 +353,27 @@ public class MainActivity extends Activity  implements
 	}
 	
 	@Override
+	public void onResume() {
+		super.onResume();  // Always call the superclass method first
+		Log.d("MainActivity", "onResume");
+		
+		// Connect to our service, which will update the UI
+		connectToService();
+	}
+
+	@Override
+	public void onPause() {
+		super.onPause();
+		Log.d("MainActivity", "onPause");
+		
+		if (!mIsLogging) {
+			disconnectAndStopService();
+		} else {
+			unbindFromService();
+		}
+	}
+	
+	@Override
 	public void onRestart() {
 		super.onRestart();  // Always call the superclass method first
 		Log.d("MainActivity", "onRestart");
@@ -380,9 +383,11 @@ public class MainActivity extends Activity  implements
 	public void onStop() {
 	    super.onStop();  // Always call the superclass method first
 		Log.d("MainActivity", "onStop");
+/*		
 		
 		if (!mIsLogging)
-			disconnectFromService();
+			disconnectAndStopService();
+*/			
 	}
 	
 	
@@ -396,19 +401,25 @@ public class MainActivity extends Activity  implements
 			Log.d("MainActivity", "Started the service");
 		}
 		// Bind to the service
-       bindService(new Intent(this, DataloggerService.class), mConnection, 0);		
+		bindToService();
 	}
 
 	
-	private void disconnectFromService() {
-		Log.d("MainActivity", "disconnectFromService()");
-
+	private void bindToService() {
+		// Bind to the service
+		Log.d("MainActivity", "bindToService()");
+		bindService(new Intent(this, DataloggerService.class), mConnection, 0);		
+	}
+	
+	private void unbindFromService() {
+		Log.d("MainActivity", "unbindFromService()");
 		// Unbind
 		if (mIsBound) {
 			// If we have received the service, and hence registered with
 			// it, then now is the time to unregister.
 			if (mService != null) {
 				try {
+					Log.d("MainActivity", "unbindFromService: sending MSG_COMMAND_UNREGISTERCLIENT");
 					Message msg = Message.obtain(null, DataloggerService.MSG_COMMAND_UNREGISTERCLIENT);
 					msg.replyTo = mMessenger;
 					mService.send(msg);
@@ -419,17 +430,23 @@ public class MainActivity extends Activity  implements
 			}
 			
 			// Detach our existing connection.
+			Log.d("MainActivity", "unbindFromService: calling unbind service");
 			unbindService(mConnection);
 			mIsBound = false;
 		}
-		
+	}
+	
+	private void disconnectAndStopService() {
+		Log.d("MainActivity", "disconnectAndStopService()");
+
+		unbindFromService();
 		// Stop the service
 		Intent stopIntent = new Intent(this, DataloggerService.class);
 		boolean stopResult = stopService(stopIntent);
 		if (stopResult) {
 			Log.d("MainActivity", "Service stopped");
 		} else {
-			Log.d("MainActivity", "disconnectFromService() returned false");
+			Log.d("MainActivity", "stopService() returned false");
 		}
 	}
 	
@@ -437,12 +454,12 @@ public class MainActivity extends Activity  implements
 	private boolean getUseLogConfirmationPrompt() {
 		SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
 		boolean value = sharedPref.getBoolean(getString(R.string.prefkey_logwarn), true);
-		Log.d("MainActivity", "useLogConfirmationPrompt returning " + (value?"true":"false"));
+		//~ Log.d("MainActivity", "useLogConfirmationPrompt returning " + (value?"true":"false"));
 		return value;
 	}
 	
 	private void setUseLogConfirmationPrompt(boolean value) {
-		Log.d("MainActivity", "setting useLogConfirmationPrompt to " + (value?"true":"false"));
+		//~ Log.d("MainActivity", "setting useLogConfirmationPrompt to " + (value?"true":"false"));
 		SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
 		SharedPreferences.Editor editor = sharedPref.edit();
 		editor.putBoolean(getString(R.string.prefkey_logwarn), value);
@@ -472,12 +489,12 @@ public class MainActivity extends Activity  implements
 	
 	@Override
 	public void onDialogPositiveClick(DialogFragment dialog, boolean doNotAskAgain) {
-		Log.d("MainActivity", "onDialogPositiveClick");
+		//~ Log.d("MainActivity", "onDialogPositiveClick");
 		if (doNotAskAgain) {
-			Log.d("MainActivity", "doNotAskAgain is true");
+			//~ Log.d("MainActivity", "doNotAskAgain is true");
 			setUseLogConfirmationPrompt(false);
 		} else {
-			Log.d("MainActivity", "doNotAskAgain is false");
+			//~ Log.d("MainActivity", "doNotAskAgain is false");
 		}
 		
 		startLogging();
@@ -485,12 +502,12 @@ public class MainActivity extends Activity  implements
 
 	@Override
 	public void onDialogNegativeClick(DialogFragment dialog, boolean doNotAskAgain) {
-		Log.d("MainActivity", "onDialogNegativeClick");
+		//~ Log.d("MainActivity", "onDialogNegativeClick");
 		if (doNotAskAgain) {
-			Log.d("MainActivity", "doNotAskAgain is true");
+			//~ Log.d("MainActivity", "doNotAskAgain is true");
 			this.setUseLogConfirmationPrompt(false);
 		} else {
-			Log.d("MainActivity", "doNotAskAgain is false");
+			//~ Log.d("MainActivity", "doNotAskAgain is false");
 		}
 		ToggleButton startStopButton = (ToggleButton)findViewById(R.id.button_startstop);
 		startStopButton.setChecked(false);
@@ -524,7 +541,7 @@ public class MainActivity extends Activity  implements
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		Log.d("MainActivity", "Issued start logging command");
+		//~ Log.d("MainActivity", "Issued start logging command");
 	}
     
 	private void stopLogging() {
@@ -554,13 +571,13 @@ public class MainActivity extends Activity  implements
 			mapper = mSpeedSpinnerMapping;
 			nItemStringId = adapter.getStringId(pos);
 			mSensorUpdateSpeed = mapper.toNumericId(nItemStringId);
-			Log.v("MainActivity", String.format("New mSensorUpdateSpeed: %s\n", adapter.getPositionalString(pos)));
+			//~ Log.v("MainActivity", String.format("New mSensorUpdateSpeed: %s\n", adapter.getPositionalString(pos)));
 		} else if (parent.getId() == R.id.spinnerCaptureType) {
 			adapter = mLogTargetSpinnerAdapter;
 			mapper = mLogTargetSpinnerMapping;
 			nItemStringId = adapter.getStringId(pos);
 			mLogTargetType = mapper.toNumericId(nItemStringId);
-			Log.v("MainActivity", String.format("New mLogTargetType: %s\n", adapter.getPositionalString(pos)));
+			//~ Log.v("MainActivity", String.format("New mLogTargetType: %s\n", adapter.getPositionalString(pos)));
 		} else {
 			Log.e("MainActivity", "Unknown source of on item selected"); 
 		}
@@ -722,17 +739,17 @@ public class MainActivity extends Activity  implements
 			sb.append(event.values[i]);
 			sb.append(" ");
 		}
-		Log.d("MainActivity", String.format("onSensorChanged, values: %s", sb.toString()));
+		//~ Log.d("MainActivity", String.format("onSensorChanged, values: %s", sb.toString()));
 		processNewSensorValues(event.values, event.timestamp); 
 	}
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		Log.d("MainActivity", "onOptionsItemSelected");
+		//~ Log.d("MainActivity", "onOptionsItemSelected");
 	    // Handle item selection
 	    switch (item.getItemId()) {
 	        case R.id.action_settings:
-	    		Log.d("MainActivity", "onOptionsItemSelected: action_settings");
+	    		//~ Log.d("MainActivity", "onOptionsItemSelected: action_settings");
 	    		showSettings();
 	        	return true;
 	        default:
@@ -746,9 +763,9 @@ public class MainActivity extends Activity  implements
 	}		
 	
 	public void buttonsettings_click(View view) {
-		Log.d("MainActivity", "Log prompt is " + (getUseLogConfirmationPrompt()?"true":"false"));
+		//~ Log.d("MainActivity", "Log prompt is " + (getUseLogConfirmationPrompt()?"true":"false"));
 		showSettings();
-		Log.d("MainActivity", "Log prompt is " + (getUseLogConfirmationPrompt()?"true":"false"));
+		//~ Log.d("MainActivity", "Log prompt is " + (getUseLogConfirmationPrompt()?"true":"false"));
 	}
 
 	private void updateLoggingStatistics(DataloggerService.DataloggerStatisticsParams params) {
