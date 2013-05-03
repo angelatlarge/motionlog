@@ -50,7 +50,7 @@ public class GraphViewBitmap extends GraphViewBase {
 	@Override
 	protected void onSizeChanged (int w, int h, int oldw, int oldh) {
 		super.onSizeChanged(w, h, oldw, oldh);
-		Log.d("GraphViewBitmap", String.format("onSizeChanged(%d,%d,%d,%d", w, h, oldw, oldh));
+		//~ Log.d("GraphViewBitmap", String.format("onSizeChanged(%d,%d,%d,%d", w, h, oldw, oldh));
 		
 		// Create a bitmap for the readings
 		if (mReadingsBitmap == null) {
@@ -68,7 +68,7 @@ public class GraphViewBitmap extends GraphViewBase {
 	@Override
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
-		Log.d("GraphViewBitmap", "draw()");  
+		//~ Log.d("GraphViewBitmap", "draw()");  
 
 		canvas.drawBitmap(mReadingsBitmap[mDrawBmpIndex], 0, 0, null);
 	}
@@ -88,7 +88,7 @@ public class GraphViewBitmap extends GraphViewBase {
 	}
 	
 	public void addReading(int readingIndex, float readingValue, long timestamp) {
-		Log.d("GraphViewBitmap", String.format("Adding datapoint index %d value %f timestamp %d", readingIndex, readingValue, timestamp/1000));
+		//~ Log.d("GraphViewBitmap", String.format("Adding datapoint index %d value %f timestamp %d", readingIndex, readingValue, timestamp/1000));
 		
 		float newReadingY = 
 				(readingValue + mMaxRange[readingIndex]) / (mMaxRange[readingIndex] * 2) * mHeight;
@@ -111,7 +111,7 @@ public class GraphViewBitmap extends GraphViewBase {
 			}
 			
 			// Draw the extra reading
-			Log.d("GraphView", String.format("drawing a line from %d, %f, to %d,%f", nNewLineX1, mLastReadingY[readingIndex], mWidth-1, newReadingY));  
+			//~ Log.d("GraphView", String.format("drawing a line from %d, %f, to %d,%f", nNewLineX1, mLastReadingY[readingIndex], mWidth-1, newReadingY));  
 			mReadingsCanvas[nDrawTargetBmpIndex].drawLine(nNewLineX1, mLastReadingY[readingIndex], mWidth-1, newReadingY, mGraphPaints[readingIndex]);
 			
 			// Flip the bitmaps

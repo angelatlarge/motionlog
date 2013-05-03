@@ -99,7 +99,7 @@ public class GraphViewBase extends View {
 	}
 	
 	protected void recreateMaxRange() {
-		Log.d("GraphViewBase", String.format("recreateMaxRange with %d", mGraphCount));
+		//~ Log.d("GraphViewBase", String.format("recreateMaxRange with %d", mGraphCount));
 		float[] newMaxRange = new float[mGraphCount];
 		if (mMaxRange != null) {
 			for (int i=0; i<mGraphCount; i++) {
@@ -114,7 +114,7 @@ public class GraphViewBase extends View {
 	}
 	
 	protected void generateDefaultGraphColors() {
-		Log.d("GraphViewBase", String.format("generateDefaultGraphColors()"));
+		//~ Log.d("GraphViewBase", String.format("generateDefaultGraphColors()"));
 		DefaultColorIterator dci = new DefaultColorIterator();
 		for (int idxColor = 0; idxColor<mGraphPaints.length; idxColor++) {
 			mGraphPaints[idxColor].setColor(dci.getNext());
@@ -122,7 +122,7 @@ public class GraphViewBase extends View {
 	}
 	
 	protected void onSizeChanged (int w, int h, int oldw, int oldh) {
-		Log.d("GraphViewBase", String.format("onSizeChanged(%d,%d,%d,%d", w, h, oldw, oldh));
+		//~ Log.d("GraphViewBase", String.format("onSizeChanged(%d,%d,%d,%d", w, h, oldw, oldh));
 		mWidth = w;
 		mHeight = h;
 		
@@ -145,7 +145,7 @@ public class GraphViewBase extends View {
 			mGridScreenWidth = mHeight/(gtm.graphMax() - gtm.graphMin()) * mGridLogicalSize;
 			mGridLegendDecimals = gtm.fractionalDigits();
 			
-			Log.d("GraphViewBase", String.format("recreateGrid: mGridLogicalSize %f, mGridScreenWidth %f, max-min: %f/%f ", mGridLogicalSize, mGridScreenWidth, gtm.graphMax(), gtm.graphMin())); 
+			//~ Log.d("GraphViewBase", String.format("recreateGrid: mGridLogicalSize %f, mGridScreenWidth %f, max-min: %f/%f ", mGridLogicalSize, mGridScreenWidth, gtm.graphMax(), gtm.graphMin())); 
 			
 			drawGrid(mGridCanvas);
 		}
@@ -198,7 +198,7 @@ public class GraphViewBase extends View {
 	@Override
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
-		Log.d("GraphViewBase", "draw()");  
+		//~ Log.d("GraphViewBase", "draw()");  
 
 		// Draw the grid from off-screen bitmap
 		ensureGridExists();
