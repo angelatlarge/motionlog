@@ -1,18 +1,8 @@
 Service sensor event does not respect delay
 Add a wake lock option
-
-
-Check on other screens
-Make the screen only thing work without the service
-Deal with screen only and screen+file logging
-
-Testing
-	
-? Separate the service-type logging from app-type logging ?
-Make sure that the service is killed when app is paused/killed when logging to screen only
-Make sure that the right things happen when app is restored
+What happens when screen only capture is done - we do not sleep
+Better buttons
 Make an installation
-	
 ---
 Add orientation change
 Settings dialog: skipping graph updates

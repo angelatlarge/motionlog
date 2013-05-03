@@ -34,7 +34,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 public class DataloggerService extends Service implements SensorEventListener {
-	public static final int LOGTYPE_GRAPH = 1;
+	public static final int LOGTYPE_SCREEN = 1;
 	public static final int LOGTYPE_FILE = 2;
 	public static final int LOGTYPE_BOTH = 3;
 	
@@ -42,7 +42,7 @@ public class DataloggerService extends Service implements SensorEventListener {
 //	public static final String INTENTEXTRA_SENSOREVENT = "com.atlarge.sensorevent";
 	public static final String INTENTEXTRA_STATUS_FORCENOTIFYFLAG = "com.atlarge.status.forcenotifyflag";
 	public static final int DEFAULT_SENSOR_RATE = SensorManager.SENSOR_DELAY_NORMAL;
-	public static final int DEFAULT_LOGTYPE = LOGTYPE_GRAPH;
+	public static final int DEFAULT_LOGTYPE = LOGTYPE_SCREEN;
 	
 	private static final int NOTIFICATIONID_INPROGRESS = 001;
 	private static final int UPDATE_STATISTICS_EVERY_INITIAL = 2;
@@ -548,7 +548,7 @@ public class DataloggerService extends Service implements SensorEventListener {
     		}
         	
         	// Send a notification to the main window, if that's what is called for
-    		if ((mLoggingType & LOGTYPE_GRAPH) > 0) {
+    		if ((mLoggingType & LOGTYPE_SCREEN) > 0) {
         		// Notify the parent window
     			//~ Log.v("AccelerometerLoggerService", "notifying parent");
     			mServiceHandler.sendSensorEvent(event);

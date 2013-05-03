@@ -27,6 +27,7 @@ import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
@@ -55,7 +56,7 @@ public class MainActivity extends Activity  implements
 	private boolean mSingleGraph = false;
 	private boolean mIsLogging = false;
 	private int mSensorUpdateSpeed = DataloggerService.DEFAULT_SENSOR_RATE;
-	private int mLogTargetType = DataloggerService.LOGTYPE_GRAPH;
+	private int mLogTargetType = DataloggerService.LOGTYPE_SCREEN;
 	private GraphViewBase[] mGVs = null;
 	private TextView[] mGVlabels = null;
 	private static final boolean LOGCONFIRMATIONPROMPT_DEFAULT = true;
@@ -73,6 +74,9 @@ public class MainActivity extends Activity  implements
 	private HashMap<Integer,String> mStatsStrings;
 	private TextView mStatsTextView;
 
+	private boolean mUseServiceForScreenLogging = false;
+    private SensorManager mSensorManager = null;
+	private Sensor mAccelerometer = null;
 	
 	/********************************************************************/
     /**
@@ -265,7 +269,7 @@ public class MainActivity extends Activity  implements
 		mLogTargetSpinnerMapping = 
 				new StringResourceMapper(
 						new int[] {R.string.menu_CAPTURETARGET_GRAPH ,      R.string.menu_CAPTURETARGET_FILE,        R.string.menu_CAPTURETARGET_BOTH},
-						new int[] {DataloggerService.LOGTYPE_GRAPH,DataloggerService.LOGTYPE_FILE, DataloggerService.LOGTYPE_BOTH}
+						new int[] {DataloggerService.LOGTYPE_SCREEN,DataloggerService.LOGTYPE_FILE, DataloggerService.LOGTYPE_BOTH}
 					);
 		Spinner spinnerCaptureType = (Spinner) findViewById(R.id.spinnerCaptureType);
 		mLogTargetSpinnerAdapter  = new IconicAdapter(
@@ -314,8 +318,10 @@ public class MainActivity extends Activity  implements
 		int layoutIndex = 1;
 		
 		// Set the graph view ranges and colors
-        SensorManager mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
-        Sensor mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+		if (mSensorManager==null)
+			mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+		if (mAccelerometer==null)
+			mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         float maxRange = mAccelerometer.getMaximumRange();
         //~ Log.d("MainActivity", String.format("Accelerometer maximum range: %f", maxRange));        
 		
@@ -529,33 +535,50 @@ public class MainActivity extends Activity  implements
 			}
 		}
 		
-		DataloggerService.DataloggerStartParams params = new DataloggerService.DataloggerStartParams(mSensorUpdateSpeed, mLogTargetType);
-    	Bundle bundle = new Bundle();
-    	bundle.putParcelable(DataloggerService.BUNDLEKEY_PARCELLABLE_PARAMS, params);
-		Message msg = Message.obtain(null, DataloggerService.MSG_COMMAND_STARTLOGGING);
-		msg.setData(bundle);
-		msg.replyTo = mMessenger;
-		try {
-			mService.send(msg);
-		} catch (RemoteException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		if (mUseServiceForScreenLogging || (mLogTargetType!=DataloggerService.LOGTYPE_SCREEN)) {
+			DataloggerService.DataloggerStartParams params = new DataloggerService.DataloggerStartParams(mSensorUpdateSpeed, mLogTargetType);
+			Bundle bundle = new Bundle();
+			bundle.putParcelable(DataloggerService.BUNDLEKEY_PARCELLABLE_PARAMS, params);
+			Message msg = Message.obtain(null, DataloggerService.MSG_COMMAND_STARTLOGGING);
+			msg.setData(bundle);
+			msg.replyTo = mMessenger;
+			try {
+				mService.send(msg);
+			} catch (RemoteException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			//~ Log.d("MainActivity", "Issued start logging command");
+		} else {
+			// Screen-only logging without the service
+			if (mSensorManager==null)
+				mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+			if (mAccelerometer==null)
+				mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+			mSensorManager.registerListener(this, mAccelerometer, mSensorUpdateSpeed);
+			mIsLogging = true;
+			updateUI();
 		}
-		//~ Log.d("MainActivity", "Issued start logging command");
 	}
     
 	private void stopLogging() {
-		// Communicate with the service via the startService command
-		Message msg = Message.obtain(null, DataloggerService.MSG_COMMAND_STOPLOGGING);
-		msg.replyTo = mMessenger;
-		try {
-			mService.send(msg);
-		} catch (RemoteException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		if (mUseServiceForScreenLogging || (mLogTargetType!=DataloggerService.LOGTYPE_SCREEN)) {
+			// Communicate with the service via the startService command
+			Message msg = Message.obtain(null, DataloggerService.MSG_COMMAND_STOPLOGGING);
+			msg.replyTo = mMessenger;
+			try {
+				mService.send(msg);
+			} catch (RemoteException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			Log.d("MainActivity", "Issued stop logging command");
+		} else {
+			// Screen-only logging without the service
+			mSensorManager.unregisterListener(this);
+			mIsLogging = false;
+			updateUI();
 		}
-		Log.d("MainActivity", "Issued stop logging command");
-//		updateUI();
 	}
 	
 	@Override
@@ -663,7 +686,7 @@ public class MainActivity extends Activity  implements
 		}
 		
 		LinearLayout llf = (LinearLayout)findViewById(R.id.layout_logging_to_file);
-		if  (((mLogTargetType & DataloggerService.LOGTYPE_GRAPH) > 0 ) | (!mIsLogging)) {
+		if  (((mLogTargetType & DataloggerService.LOGTYPE_SCREEN) > 0 ) | (!mIsLogging)) {
 			// Logging to file only
 			llf.setVisibility(View.GONE);
 			setGVvisibility(View.VISIBLE);
@@ -676,6 +699,10 @@ public class MainActivity extends Activity  implements
 		
 		spinner = (Spinner) findViewById(R.id.spinnerCaptureType);
 		if (spinner != null)
+			spinner.setEnabled(!mIsLogging);
+		
+		ImageButton buttonSettings = (ImageButton)findViewById(R.id.button_settings);
+		if (buttonSettings != null)
 			spinner.setEnabled(!mIsLogging);
 		
 		// Prepare for status updates
