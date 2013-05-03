@@ -1,6 +1,10 @@
 Action bar for the settings screen: no way to get out without a back button
 Better start/stop button
 
+Code review and cleanup
+	Can save a lot of "find by id" views into members
+Log.x cleanup
+
 Add help pages?
 Service sensor event does not respect delay
 Add a wake lock option

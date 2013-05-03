@@ -1,15 +1,18 @@
 # Source EPS images, collected via wildcard
 #~ SRC_EPS=$(wildcard *.eps)
-SRC_EPS=					\
-	ic_dialog_settings.eps		\
-	ic_dialog_speed_fast.eps	\
-	ic_dialog_speed_medium.eps	\
-	ic_dialog_speed_slow.eps	\
-	ic_dialog_speed_vfast.eps	\
-	ic_dialog_target_both.eps	\
-	ic_dialog_target_file.eps	\
-	ic_dialog_target_graph.eps	\
-	ic_stat_notify_logging.eps
+SRC_EPS=									\
+	ic_dialog_settings.eps					\
+	ic_dialog_speed_fast.eps				\
+	ic_dialog_speed_medium.eps				\
+	ic_dialog_speed_slow.eps				\
+	ic_dialog_speed_vfast.eps				\
+	ic_dialog_target_both.eps				\
+	ic_dialog_target_file.eps				\
+	ic_dialog_target_graph.eps				\
+	ic_stat_notify_logging.eps				\
+	ic_dialog_playpause_pause.eps			\
+	ic_dialog_playpause_play.eps
+
 
 #~ SRC_EPS=test.eps
 BBX_EPSDIR=./bbxeps
@@ -41,6 +44,21 @@ AndroidRasterImages: $(ALL_PNGS)
 
 $(BBX_EPSDIR): 
 	mkdir -p $(BBX_EPSDIR)
+	
+	
+# Converts the image to white and adds the correct artboard size
+$(BBX_EPSDIR)/%.eps : %.eps $(BBX_EPSDIR)
+	cat $<			\
+	| ./addbb.sh	\
+	| ./to_white.sh	\
+	> $@
+
+$(BBX_EPSDIR)/%.eps : %.sine.eps $(BBX_EPSDIR)
+	cat $<			\
+	| ./addbb.sh	\
+	| ./to_white.sh	\
+	> $@
+
 
 CONVERT_OPTS=								\
 		-define png:alpha 					\

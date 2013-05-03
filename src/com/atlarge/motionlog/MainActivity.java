@@ -41,6 +41,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -303,7 +304,18 @@ public class MainActivity extends Activity  implements
 		
 		// Create the GraphicViews
 		createGraphViews();
-
+		
+		// Fix up the toggle button
+/*		
+		ToggleButton startStopButton = (ToggleButton)findViewById(R.id.button_startstop);
+		startStopButton.setText(null);
+		startStopButton.setTextOn(null);
+		startStopButton.setTextOff(null);		
+		Drawable d = getResources().getDrawable(R.drawable.ic_dialog_playpause_play);
+		d.setBounds(0, 0, d.getIntrinsicWidth(), d.getIntrinsicHeight());
+		startStopButton.setCompoundDrawablePadding(0);
+		startStopButton.setCompoundDrawables(null,d,null,null);		
+*/
 	}
 
 	private void createGraphViews() {
@@ -531,16 +543,21 @@ public class MainActivity extends Activity  implements
 		} else {
 			//~ Log.d("MainActivity", "doNotAskAgain is false");
 		}
-		ToggleButton startStopButton = (ToggleButton)findViewById(R.id.button_startstop);
-		startStopButton.setChecked(false);
+		updateStartStopButtonLooks(false);
 	}
 
 	@Override
 	public void onDialogCancel(DialogFragment dialog, boolean doNotAskAgain) {
-		ToggleButton btn = (ToggleButton)findViewById(R.id.button_startstop);
-		btn.setChecked(false);
+		this.updateStartStopButtonLooks(false);
 	}
 		
+	private void updateStartStopButtonLooks(boolean isLogging) {
+		ImageButton startStopButton = (ImageButton)findViewById(R.id.button_startstop);
+		startStopButton.setImageDrawable(getResources().getDrawable(isLogging?R.drawable.ic_dialog_playpause_pause:R.drawable.ic_dialog_playpause_play));
+//		ToggleButton startStopButton = (ToggleButton)findViewById(R.id.button_startstop);
+//		startStopButton.setChecked(isLogging?true:false);
+	}
+	
 	private void startLocalLogging() {
 		if (mSensorManager==null)
 			mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
@@ -763,8 +780,7 @@ public class MainActivity extends Activity  implements
 		}	
 		
 		// Update the button status
-		ToggleButton startStopButton = (ToggleButton)findViewById(R.id.button_startstop);
-		startStopButton.setChecked(mIsLogging);
+		updateStartStopButtonLooks(mIsLogging);
 	}
 	
 	@Override

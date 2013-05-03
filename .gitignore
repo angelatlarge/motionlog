@@ -49,3 +49,11 @@ src_reference/
 src_unused/
 pulled_files/
 image_src/convert.sh
+res/drawable-hdpi/ic_dialog_playpause_pause.png
+res/drawable-hdpi/ic_dialog_playpause_play.png
+res/drawable-ldpi/ic_dialog_playpause_pause.png
+res/drawable-ldpi/ic_dialog_playpause_play.png
+res/drawable-mdpi/ic_dialog_playpause_pause.png
+res/drawable-mdpi/ic_dialog_playpause_play.png
+res/drawable-xhdpi/ic_dialog_playpause_pause.png
+res/drawable-xhdpi/ic_dialog_playpause_play.png

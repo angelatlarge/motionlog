@@ -55,13 +55,26 @@
  			android:gravity="center"            
 		/>
 	    
+        <ImageButton
+            android:id="@+id/button_startstop"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+        	android:onClick="startStopButtonClick"
+	        android:src="@drawable/ic_dialog_playpause_play" 
+		/>        	
+<!--         
         <ToggleButton
             android:id="@+id/button_startstop"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentRight="true"
         	android:onClick="startStopButtonClick"
+			android:textOff=""
+			android:textOn=""
+			android:text=""
         />
+ -->        
     </RelativeLayout>
 
 	<LinearLayout 
