@@ -455,13 +455,13 @@ public class MainActivity extends Activity  implements
 				mGVlabels[i].setText(axisNames[i]);
 				layout.addView(mGVlabels[i], layoutIndex++);
 				
-				mGVs[i].setGraphCount(1);
-				mGVs[i].setMaxRange(0, maxRange);
-				mGVs[i].setGraphColor(0, dci.getNext());
+				mGVs[i].setSeriesCount(1);
+				mGVs[i].setMaxYExtent(0, maxRange);
+				mGVs[i].setSeriesColor(0, dci.getNext());
 			} else {
-				mGVs[i].setGraphCount(3);
+				mGVs[i].setSeriesCount(3);
 				for (int j=0; j<3; j++) 
-					mGVs[i].setMaxRange(j, maxRange);
+					mGVs[i].setMaxYExtent(j, maxRange);
 			}
 			layout.addView(mGVs[i], layoutIndex++);
 		}

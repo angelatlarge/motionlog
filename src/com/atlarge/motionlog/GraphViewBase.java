@@ -10,69 +10,122 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 
+/**
+ * Base glass for drawing graphs
+*/ 
 public class GraphViewBase extends View {
-	protected final int DEFAULT_GRAPH_COUNT	= 2;
-	protected final float DEFAULT_GRID = 25;
-	protected int mGraphCount = DEFAULT_GRAPH_COUNT;
 	
-	protected Paint mGridPaint;
+	/** Default size of the grid, in dp */
+	protected final float DEFAULT_GRID_SIZE = 25;
+	
+	/** Number of series to create by default */
+	protected final int DEFAULT_SERIES_COUNT	= 1;
+	/** Number of series to display on the graph */
+	protected int mSeriesCount = DEFAULT_SERIES_COUNT;
+
+	/** Paint used to draw the borders */
 	protected Paint mBorderPaint;
+	
+	/** Paint used to draw the horizontal zero line (x-axis) */
 	protected Paint mCenterPaint;
-	protected Paint[] mGraphPaints;
+	
+	/** Array of paints use to draw each series */
+	protected Paint[] mSeriesPaints;
+	
+	
+	/** Paint used to draw the gridlines */
+	protected Paint mGridlinePaint;
 
-	protected Canvas mGridCanvas;
-	protected Bitmap mGridBitmap;
-
+	/** Size of the text used to draw the grid labels */
 	private static final float GRIDLABEL_SIZE = 12;
+	
+	/** Color used to draw the grid labels */
+	private static final int GRIDLABEL_COLOR = 0xFFFFFFFF;
+	
+	/** Paint used to draw the grid labels */
 	protected TextPaint mGridLabelPaint;
-	protected float mTextWidth;
-	protected float mTextHeight;
-	protected float mGridScreenWidth;
-	protected float mGridLogicalSize;
+
+	/** Number of decimal digits drawn for each grid label */
 	protected int mGridLegendDecimals;
 	
-	protected float[] mMaxRange;
+	/** Calculated value of the width of the grid cell on screen */
+	protected float mGridScreenWidth;
 	
+	/** The logical size of each grid cell */
+	protected float mGridLogicalSize;
+	
+	/** Canvas used to draw the grid */
+	protected Canvas mGridCanvas;
+
+	/** Bitmap on which the grid is drawn. 
+	 *  We blit this bitmap onto the drawing canvas for fast draws */
+	protected Bitmap mGridBitmap;
+
+	/** Maximum size of the Y axis
+	 * if this value is "5" Y axis will be visible from -5 to +5
+	 */
+	protected float[] mMaximumYExtent;
+	
+	
+	/** Memoized witdth of this View */
 	protected int mWidth;
+	
+	/** Memoized heigth of this View */
 	protected int mHeight;
 	
 	
+	
+	/**
+	 * Constructor
+	 */
 	public GraphViewBase(Context context) {
 		super(context);
 		init(null, 0);
 	}
 
+	/**
+	 * Constructor
+	 */
 	public GraphViewBase(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		init(attrs, 0);
 	}
 
+	/**
+	 * Constructor
+	 */
 	public GraphViewBase(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
 		init(attrs, defStyle);
 	}
 
-	protected void init(AttributeSet attrs, int defStyle) {
-		// Load attributes
-//		final TypedArray a = getContext().obtainStyledAttributes(attrs, R.styleable.GraphView, defStyle, 0);
-//		a.recycle();
 
-		// Set up a default TextPaint object
+	/**
+	 * Initialization routine: called from constructors
+	 */
+	protected void init(AttributeSet attrs, int defStyle) {
+		// We don't use attributes, so this is not done
+		// Load attributes
+		//		final TypedArray a = getContext().obtainStyledAttributes(attrs, R.styleable.GraphView, defStyle, 0);
+		//		a.recycle();
+
+		// Paint for grid labels
 		mGridLabelPaint = new TextPaint();
-		mGridLabelPaint.setColor(0xFFFFFFFF);
+		mGridLabelPaint.setColor(GRIDLABEL_COLOR);
 		mGridLabelPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
 		mGridLabelPaint.setTextAlign(Paint.Align.LEFT);
 		mGridLabelPaint.setTextSize(GRIDLABEL_SIZE);
 
+		// Paint for the border labels
 		mBorderPaint = new Paint();
 		mBorderPaint.setARGB (0xFF,0x40,0x40,0x40);
 		mBorderPaint.setStyle(Paint.Style.STROKE);
 		mBorderPaint.setStrokeWidth(1);
 		
-		mGridPaint = new Paint();
-		mGridPaint.setARGB (0xFF,0x20,0x20,0x20);
-		mGridPaint.setStyle(Paint.Style.STROKE);
-		mGridPaint.setStrokeWidth(1);
+		mGridlinePaint = new Paint();
+		mGridlinePaint.setARGB (0xFF,0x20,0x20,0x20);
+		mGridlinePaint.setStyle(Paint.Style.STROKE);
+		mGridlinePaint.setStrokeWidth(1);
 		
 		mCenterPaint = new Paint();
 		mCenterPaint.setARGB (0xFF,0x80,0x80,0x80);
@@ -83,41 +136,42 @@ public class GraphViewBase extends View {
 		recreateReadingPaints();
 
 		// Max range storage
-		recreateMaxRange();
+		recreateMaximumExtentArray();
 
 	}
 
 	protected void recreateReadingPaints() {
-		mGraphPaints = new Paint[mGraphCount];
-		for (int i=0; i<mGraphCount; i++) {
-			mGraphPaints[i] = new Paint();
-			mGraphPaints[i].setStyle(Paint.Style.STROKE);
-			mGraphPaints[i].setStrokeWidth(1);
-//			mGraphPaints[i].setAntiAlias(true);
+		mSeriesPaints = new Paint[mSeriesCount];
+		for (int i=0; i<mSeriesCount; i++) {
+			mSeriesPaints[i] = new Paint();
+			mSeriesPaints[i].setStyle(Paint.Style.STROKE);
+			mSeriesPaints[i].setStrokeWidth(1);
+			// Antialiasing doesn't look so good, so we don't use it
+			// 		mGraphPaints[i].setAntiAlias(true);
 		}		
-		generateDefaultGraphColors();
+		generateDefaultSeriesColors();
 	}
 	
-	protected void recreateMaxRange() {
+	protected void recreateMaximumExtentArray() {
 		//~ Log.d("GraphViewBase", String.format("recreateMaxRange with %d", mGraphCount));
-		float[] newMaxRange = new float[mGraphCount];
-		if (mMaxRange != null) {
-			for (int i=0; i<mGraphCount; i++) {
-				if (i<mMaxRange.length) {
-					newMaxRange[i] = mMaxRange[i];
+		float[] newMaxRange = new float[mSeriesCount];
+		if (mMaximumYExtent != null) {
+			for (int i=0; i<mSeriesCount; i++) {
+				if (i<mMaximumYExtent.length) {
+					newMaxRange[i] = mMaximumYExtent[i];
 				} else {
 					newMaxRange[i] = 1;
 				}
 			}
 		}
-		mMaxRange = newMaxRange; 
+		mMaximumYExtent = newMaxRange; 
 	}
 	
-	protected void generateDefaultGraphColors() {
+	protected void generateDefaultSeriesColors() {
 		//~ Log.d("GraphViewBase", String.format("generateDefaultGraphColors()"));
 		DefaultColorIterator dci = new DefaultColorIterator();
-		for (int idxColor = 0; idxColor<mGraphPaints.length; idxColor++) {
-			mGraphPaints[idxColor].setColor(dci.getNext());
+		for (int idxColor = 0; idxColor<mSeriesPaints.length; idxColor++) {
+			mSeriesPaints[idxColor].setColor(dci.getNext());
 		}			
 	}
 	
@@ -140,7 +194,7 @@ public class GraphViewBase extends View {
 			mGridCanvas.setBitmap(mGridBitmap);
 			mGridBitmap.eraseColor(Color.TRANSPARENT);
 			
-			GraphTickMarks gtm = new GraphTickMarks(-mMaxRange[0], mMaxRange[0], (int)(mHeight/DEFAULT_GRID), false);
+			GraphTickMarks gtm = new GraphTickMarks(-mMaximumYExtent[0], mMaximumYExtent[0], (int)(mHeight/DEFAULT_GRID_SIZE), false);
 			mGridLogicalSize = gtm.tickSpacing();
 			mGridScreenWidth = mHeight/(gtm.graphMax() - gtm.graphMin()) * mGridLogicalSize;
 			mGridLegendDecimals = gtm.fractionalDigits();
@@ -156,7 +210,7 @@ public class GraphViewBase extends View {
 		
 		// Vertical lines
 		for (float x=mGridScreenWidth;x<mWidth;x+=mGridScreenWidth) {
-			canvas.drawLine(x, 0, x, mHeight, mGridPaint);
+			canvas.drawLine(x, 0, x, mHeight, mGridlinePaint);
 		}
 		
 		// Center line
@@ -166,8 +220,8 @@ public class GraphViewBase extends View {
 		// Horizontal lines
 		float[] y = {nCenter-mGridScreenWidth, nCenter+mGridScreenWidth};
 		while (y[0]>0) {		// Positive y is down
-			canvas.drawLine(0, y[0], mWidth, y[0], mGridPaint);
-			canvas.drawLine(0, y[1], mWidth, y[1], mGridPaint);
+			canvas.drawLine(0, y[0], mWidth, y[0], mGridlinePaint);
+			canvas.drawLine(0, y[1], mWidth, y[1], mGridlinePaint);
 			y[0] -= mGridScreenWidth;
 			y[1] += mGridScreenWidth;		
 		}
@@ -206,31 +260,33 @@ public class GraphViewBase extends View {
 		
 	}
 
-	public void setMaxRange(int readingIndex, float maxRange) {
+	public void setMaxYExtent(int readingIndex, float maxRange) {
 		if (readingIndex==0)
 			destroyGrid();
-		mMaxRange[readingIndex] = maxRange;
+		mMaximumYExtent[readingIndex] = maxRange;
 	}
 	
-	public void setGraphCount(int value) {
-		mGraphCount = value;
+	public void setSeriesCount(int value) {
+		mSeriesCount = value;
 		recreateReadingPaints();
-		recreateMaxRange();
+		recreateMaximumExtentArray();
 		clear();
 	}
 	
-	public void setGraphColor(int idx, int a, int r, int g, int b) {
-		mGraphPaints[idx].setARGB(a, r, g, b);
+	public void setSeriesColor(int idx, int a, int r, int g, int b) {
+		mSeriesPaints[idx].setARGB(a, r, g, b);
 	}
 	
-	public void setGraphColor(int idx, int color) {
-		mGraphPaints[idx].setColor(color);
+	public void setSeriesColor(int idx, int color) {
+		mSeriesPaints[idx].setColor(color);
 	}
 	
 	public void clear() {
+		// To be implemented by the derived classes
 	}
 	
 	public void addReading(int readingIndex, float readingValue, long timestamp) {
+		// To be implemented by the derived classes
 	}
 	
 }

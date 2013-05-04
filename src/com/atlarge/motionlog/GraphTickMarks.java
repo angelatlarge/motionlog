@@ -6,6 +6,11 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Class that given a range decides where to put tickmarks
+ * 
+ * Basic idea: multiples of 10 are preferred as well as 2s and 5s. (="nice numbers")
+ */
 class GraphTickMarks {
 	float mRange;
 	float mTickspacing;

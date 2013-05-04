@@ -1,11 +1,19 @@
 package com.atlarge.motionlog;
 
+/**
+ * Class for generating a list of distinct colors to be used by graphs
+ */
 public class DefaultColorIterator {
 	private int mIncrementValue = 0x100;
 	private int mIncrementMult = 1;
 	private int mColorMask = 1;
 
 	 //Color: (alpha << 24) | (red << 16) | (green << 8) | blue.
+	/**
+	 * Returns the next color in the sequence
+	 * 
+	 * @return int 	color
+	 */
 	public int getNext() {
 		int result = 0;
 		int[] colors = {0, 0, 0};

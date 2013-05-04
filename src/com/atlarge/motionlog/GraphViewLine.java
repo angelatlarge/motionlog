@@ -19,7 +19,7 @@ public class GraphViewLine extends GraphViewBase {
 		int mPresent;
 		
 		Datapoint(int idx, float _data, long _timestamp) {
-			mData = new float[mGraphCount];
+			mData = new float[mSeriesCount];
 			mData[idx] = _data;
 			mTimestamp = _timestamp;
 			mPresent = 1<<idx;
@@ -66,13 +66,13 @@ public class GraphViewLine extends GraphViewBase {
 			float x2 = mWidth - 1;
 			Datapoint dp = it.next();
 			long lastTime = dp.mTimestamp;
-			float y2 = (dp.get(0) + mMaxRange[0]) / (mMaxRange[0] * 2) * mHeight;
+			float y2 = (dp.get(0) + mMaximumYExtent[0]) / (mMaximumYExtent[0] * 2) * mHeight;
 			while (it.hasNext()) { 
 				dp = it.next();
-				float y1 = (dp.get(0) + mMaxRange[0]) / (mMaxRange[0] * 2) * mHeight;
+				float y1 = (dp.get(0) + mMaximumYExtent[0]) / (mMaximumYExtent[0] * 2) * mHeight;
 				float x1 = x2 - (lastTime - dp.mTimestamp) * mScaleX;
 				Log.d("GraphViewLine", String.format("drawing a line from %f, %f, to %f,%f (%d)", x1, y1, x2, y2, (lastTime - dp.mTimestamp)));  
-				canvas.drawLine(x1, y1, x2, y2, mGraphPaints[0]);
+				canvas.drawLine(x1, y1, x2, y2, mSeriesPaints[0]);
 				y2=y1;
 				x2=x1;
 				lastTime = dp.mTimestamp;

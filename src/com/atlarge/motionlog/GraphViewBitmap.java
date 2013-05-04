@@ -38,11 +38,11 @@ public class GraphViewBitmap extends GraphViewBase {
 	}
 
 	protected void recreateReadingStorage() {
-		mLastReadingY = new float[mGraphCount];
-		mReadingLag = new int[mGraphCount]; 
-		for (int i=0; i<mGraphCount; i++) {
+		mLastReadingY = new float[mSeriesCount];
+		mReadingLag = new int[mSeriesCount]; 
+		for (int i=0; i<mSeriesCount; i++) {
 			mLastReadingY[i] = Float.NEGATIVE_INFINITY;
-			mMaxRange[i] = 1;
+			mMaximumYExtent[i] = 1;
 			mReadingLag[i] = 0;
 		}				
 	}
@@ -83,7 +83,7 @@ public class GraphViewBitmap extends GraphViewBase {
 	}
 	
 	public void setGraphCount(int value) {
-		super.setGraphCount(value);
+		super.setSeriesCount(value);
 		recreateReadingStorage();
 	}
 	
@@ -91,7 +91,7 @@ public class GraphViewBitmap extends GraphViewBase {
 		//~ Log.d("GraphViewBitmap", String.format("Adding datapoint index %d value %f timestamp %d", readingIndex, readingValue, timestamp/1000));
 		
 		float newReadingY = 
-				(readingValue + mMaxRange[readingIndex]) / (mMaxRange[readingIndex] * 2) * mHeight;
+				(readingValue + mMaximumYExtent[readingIndex]) / (mMaximumYExtent[readingIndex] * 2) * mHeight;
 		boolean haveLastReading = mLastReadingY[readingIndex] != Float.NEGATIVE_INFINITY;
 		if (haveLastReading) {
 			// Draw something
@@ -112,7 +112,7 @@ public class GraphViewBitmap extends GraphViewBase {
 			
 			// Draw the extra reading
 			//~ Log.d("GraphView", String.format("drawing a line from %d, %f, to %d,%f", nNewLineX1, mLastReadingY[readingIndex], mWidth-1, newReadingY));  
-			mReadingsCanvas[nDrawTargetBmpIndex].drawLine(nNewLineX1, mLastReadingY[readingIndex], mWidth-1, newReadingY, mGraphPaints[readingIndex]);
+			mReadingsCanvas[nDrawTargetBmpIndex].drawLine(nNewLineX1, mLastReadingY[readingIndex], mWidth-1, newReadingY, mSeriesPaints[readingIndex]);
 			
 			// Flip the bitmaps
 			if (mScroll) {
@@ -126,7 +126,7 @@ public class GraphViewBitmap extends GraphViewBase {
 		
 		// Update the readings lag
 		if (mReadingLag[readingIndex] == 0) {
-			for (int i=0; i<mGraphCount; i++) {
+			for (int i=0; i<mSeriesCount; i++) {
 				if (i != readingIndex)
 					mReadingLag[i]++;
 			}
