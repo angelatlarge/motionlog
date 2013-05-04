@@ -81,10 +81,11 @@ public class GraphViewLine extends GraphViewBase {
 		}
 	}
 
-	public void addReading(int readingIndex, float readingValue, long timestamp) {
+	@Override
+	public void addValue(int seriesIndex, float value, long timestamp) {
 		// Deal with the data
-		Log.d("GraphViewLine", String.format("Adding datapoint %f %d", readingValue, timestamp/1000));
-		mDatapoints.add(new Datapoint(readingIndex, readingValue, timestamp/1000));
+		Log.d("GraphViewLine", String.format("Adding datapoint %f %d", value, timestamp/1000));
+		mDatapoints.add(new Datapoint(seriesIndex, value, timestamp/1000));
 		invalidate();
 	}
 	

@@ -795,10 +795,10 @@ public class MainActivity extends Activity  implements
 	private void processNewSensorValues(float[] values, long timestamp) {
 		if (mSingleGraph) {
 			for (int i=0; i<values.length; i++) 
-				mGVs[0].addReading(i, values[i], timestamp);
+				mGVs[0].addValue(i, values[i], timestamp);
 		} else {
 			for (int i=0; i<values.length; i++) 
-				mGVs[i].addReading(0, values[i], timestamp);
+				mGVs[i].addValue(0, values[i], timestamp);
 		}
 	}
 	
