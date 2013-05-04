@@ -7,6 +7,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
+import android.annotation.SuppressLint;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.DialogFragment;
@@ -194,6 +195,7 @@ public class MainActivity extends Activity  implements
 	/**
 	 * Handler of incoming messages from service.
 	 */
+	@SuppressLint("HandlerLeak")
 	class IncomingHandler extends Handler {
 		@Override
 		public void handleMessage(Message msg) {

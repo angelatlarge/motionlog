@@ -11,6 +11,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.CheckBox;
 
+/**
+ * This class implements a dialog fragment that asks the user to confirm
+ * when the user initates a file logging operation
+ */
 public class LogConfirmationDialogFragment extends DialogFragment {
     /* The activity that creates an instance of this dialog fragment must
      * implement this interface in order to receive event callbacks.
@@ -21,11 +25,15 @@ public class LogConfirmationDialogFragment extends DialogFragment {
         public void onDialogCancel(DialogFragment dialog, boolean doNotAskAgain);
     }
 	
-    // Use this instance of the interface to deliver action events
+    /** We will deliver dialog events to the mListener */ 
     DialogListener mListener;
+    
+    /** View that adds a checkbox */ 
     View checkboxLayout;
     
-    // Override the Fragment.onAttach() method to instantiate the NoticeDialogListener
+    /** Overriden Fragment.onAttach() method 
+     *  in order to instantiate the NoticeDialogListener
+     */
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
@@ -40,6 +48,9 @@ public class LogConfirmationDialogFragment extends DialogFragment {
     }
 	
     @Override
+    /** 
+     * Dialog initialization
+     */
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         // Use the Builder class for convenient dialog construction
 		Activity activity = getActivity();
@@ -73,6 +84,9 @@ public class LogConfirmationDialogFragment extends DialogFragment {
     }
     
     @Override
+    /**
+     * Delivers the cancel event to mListener
+     */
     public void onCancel (DialogInterface dialog) {
     	CheckBox checkbox = (CheckBox)checkboxLayout.findViewById(R.id.checkbox_donotaskagain);
     	mListener.onDialogCancel(LogConfirmationDialogFragment.this, checkbox.isChecked());

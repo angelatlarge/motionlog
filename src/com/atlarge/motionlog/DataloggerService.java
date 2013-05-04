@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
+import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -371,7 +372,8 @@ public class DataloggerService extends Service implements SensorEventListener {
 	 * This class reads messges from the queue
 	 * and processes the commands send by our Activity
 	 */
-    class ServiceHandler extends Handler {
+    @SuppressLint("HandlerLeak")
+	class ServiceHandler extends Handler {
         @Override
         /** 
          * Main method: processes a queued command message

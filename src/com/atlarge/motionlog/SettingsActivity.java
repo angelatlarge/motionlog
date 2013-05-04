@@ -4,6 +4,9 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.preference.PreferenceFragment;
 
+/**
+ * This class provides an Activity that shows settings to the user
+ */
 public class SettingsActivity extends Activity {
 	
 	

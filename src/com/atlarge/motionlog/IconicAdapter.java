@@ -1,5 +1,6 @@
 package com.atlarge.motionlog;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
@@ -45,6 +46,7 @@ public class IconicAdapter extends android.widget.BaseAdapter implements Spinner
 	 * @param mTextViewResourceID		Resource id of the text view in the row layour
 	 * @param mIconViewResourceID		Resource id of the icon view in the row layout
 	 */
+	@SuppressLint("Recycle")
 	public IconicAdapter(
 			Context context, 
 			int stringArrayResourceID,
