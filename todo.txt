@@ -1,5 +1,6 @@
 Action bar for the settings screen: no way to get out without a back button
 Better start/stop button
+License
 
 Code review and cleanup
 	Can save a lot of "find by id" views into members

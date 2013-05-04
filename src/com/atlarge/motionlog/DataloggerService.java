@@ -20,53 +20,122 @@ import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.IBinder;
-import android.os.Looper;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.RemoteException;
 import android.support.v4.app.NotificationCompat;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
+/**
+ * This class implements an Android Service which logs sensor activity to file.  
+ * The service executes in a separate process from the application 
+ * (from the main Activity), allowing the capture of sensor events to continue
+ * even when the application is suspended
+ * 
+ * The service uses Messenger to marshall commands from the Activity, 
+ * and does not emploty aidl.
+ */
+
 public class DataloggerService extends Service implements SensorEventListener {
+	/** Logging type constants */
 	public static final int LOGTYPE_SCREEN = 1;
 	public static final int LOGTYPE_FILE = 2;
 	public static final int LOGTYPE_BOTH = 3;
-	
-	public static final String APPLICATION_DIRECTORY = "com.atlarge.motionlog";
-//	public static final String INTENTEXTRA_SENSOREVENT = "com.atlarge.sensorevent";
-	public static final String INTENTEXTRA_STATUS_FORCENOTIFYFLAG = "com.atlarge.status.forcenotifyflag";
+
+	/** Default sensor event capture rate */
 	public static final int DEFAULT_SENSOR_RATE = SensorManager.SENSOR_DELAY_NORMAL;
+	
+	/** Sensor rate that we use/will be using to capture sensor events */
+	private int mSensorRate = DEFAULT_SENSOR_RATE;
+
+	
+	/** Default capture type: screen only */
 	public static final int DEFAULT_LOGTYPE = LOGTYPE_SCREEN;
 	
+	/** Logging type we'll use: screen, file, or both? */
+	private int mLoggingType = DEFAULT_LOGTYPE;
+	
+	/** Where the log files go */
+	public static final String APPLICATION_DIRECTORY = "@string/application_directory";
+	
+	/** ID of the notification we show to the user that the service is running */
 	private static final int NOTIFICATIONID_INPROGRESS = 001;
+	
+	
+	/** Initial rate of statistics updates: evey two sensor events */
 	private static final int UPDATE_STATISTICS_EVERY_INITIAL = 2;
 	
-//	private Looper mServiceLooper;
-	private ServiceHandler mServiceHandler;
-	private boolean mIsLogging = false;
-    private File mLogFile;
-	private FileOutputStream mLogOutputStream;
-	private PrintWriter mLogWriter;				// Using this as a flag for whether to log to file
-	private int mSensorRate = DEFAULT_SENSOR_RATE;
-	private int mLoggingType = DEFAULT_LOGTYPE;
-    private SensorManager mSensorManager;
-    private Sensor mAccelerometer;
-    private String mLogFilename = null;;
-    private int mTotalSensorEventsCount;		// Number of sensor events this run
-    private long mFirstTotalEventTimestamp;		// Timestamp of the first event
-    private long mFirstLatestEventTimestamp;	// Timestamp of the since activity has been updated
-    private static final float mStatisticsUpdateFrequency = 1;	// Updating frequency 
+	/** Desired statistics update rate (in updates per second, or Hz) */
+    private static final float mStatisticsUpdateFrequency = 1;	// Updating frequency
     
+    /** Calculated value: how many events to capture before sending statistics update
+     *  in order to achieve mStatisticsUpdateFrequency of statistics updates
+     */
     private int mUpdateStatisticsRatio = UPDATE_STATISTICS_EVERY_INITIAL;
 
+    
+    /** Are we logging or idle? */
+	private boolean mIsLogging = false;
+
+	
+	/** The date portion of the log filename will look like this */
+	private static final String FILENAME_DATEFORMAT_STRING = "yyyyMMdd_HH-mm-ss";
+	
+	/** The local for formatting the date portion of the filename */
+	private static final Locale FILENAME_DATEFORMAT_LOCALE = Locale.US; 
+	
+	/** The local for formatting the date portion of the filename */
+	private static final String FILENAME_EXTENSION = ".txt"; 
+	
+    /** Name of the file we are logging to */
+    private String mLogFilename = null;
+    
+	/** File we are logging to */
+    private File mLogFile;
+    
+    /** Stream used to save sensor events to file */
+	private FileOutputStream mLogOutputStream;
+	
+	/** Print writer we use to write to log file
+	 *  
+	 *  we also use the nullness as a flag to stop logging
+	 *  inside the sensor event handler
+	 */
+	private PrintWriter mLogWriter;
+	
+
+	/** Sensor manager: memoized value */
+    private SensorManager mSensorManager;
+    
+    /** Accelerometer sensor we are logging from */
+    private Sensor mAccelerometer;
+
+
+    /** Statistics: number of sensor events captured */
+    private int mTotalSensorEventsCount;		// Number of sensor events this run
+    
+    /** Statistics: timestamp (ns) of the first captured sensor event this logging session */
+    private long mFirstTotalEventTimestamp;		// Timestamp of the first event
+    
+    /** Statistics: timestamp (ns) of the first captured sensor event */
+    private long mFirstLatestEventTimestamp;	// Timestamp of the since activity has been updated
+    
+
+    /** Class that will handle service requests from the Activity */
+	private ServiceHandler mServiceHandler;
+    
+	
+	/** string key identifying our parcellable params in a Bundle */ 
     public static final String BUNDLEKEY_PARCELLABLE_PARAMS = "com.atlarge.motionlog.BUNDLE_PARCELLABLE_PARAMS";
+    
+	/** string key identifying long value representing the timestamp of the sensor event */ 
     public static final String BUNDLEKEY_SENSOREVENT_TIMESTAMP = "com.atlarge.motionlog.BUNDLEKEY_SENSOREVENT_TIMESTAMP";
+    
+	/** string key identifying the float array representing the sensor values in a sensor event */ 
     public static final String BUNDLEKEY_SENSOREVENT_VALUES = "com.atlarge.motionlog.BUNDLEKEY_SENSOREVENT_VALUES";
     
     /** Keeps track of all current registered clients. */
@@ -116,8 +185,10 @@ public class DataloggerService extends Service implements SensorEventListener {
      */
 	public static final int MSG_RESPONSE_STATISTICS = 0x08;
 
-/*
-*/
+
+	/**
+	 * Base class for Parcelable data packet we send
+	 */
 	protected static class DataloggerParams implements Parcelable {
 		DataloggerParams() {};
 		
@@ -144,6 +215,9 @@ public class DataloggerService extends Service implements SensorEventListener {
 		}
 	}
 
+	/**
+	 * Base class for Parcelable data packets that include configuration parameters
+	 */
 	protected static class DataloggerConfigurableParams extends DataloggerParams implements Parcelable {
 		protected final int mSensorUpdateDelay;
 		protected final int mLoggingType;
@@ -180,6 +254,9 @@ public class DataloggerService extends Service implements SensorEventListener {
 		
 	};
 
+	/**
+	 * Class implementing a Parcelable data packet that tells this Service to start logging
+	 */
 	public static class DataloggerStartParams extends DataloggerConfigurableParams implements Parcelable {
 		public DataloggerStartParams(int sensorUpdateDelay, int loggingType) {
 			super(sensorUpdateDelay, loggingType);
@@ -201,6 +278,10 @@ public class DataloggerService extends Service implements SensorEventListener {
 
 	};
 		
+	/**
+	 * Class implementing a Parcelable data packet used by this Service 
+	 * to tell our Activity what it is doing
+	 */
 	public static class DataloggerStatusParams extends DataloggerConfigurableParams implements Parcelable {
 		protected boolean mLogging;
 		protected boolean mStatusChanged;
@@ -242,6 +323,10 @@ public class DataloggerService extends Service implements SensorEventListener {
 		}
 	};
 		
+	/**
+	 * Class implementing a Parcelable data packet used by this Service 
+	 * to notify our Activity of the logging statistics
+	 */
 	public static class DataloggerStatisticsParams extends DataloggerParams implements Parcelable {
 		protected long mEventsCount;
 		protected float mTotalRate;
@@ -282,8 +367,15 @@ public class DataloggerService extends Service implements SensorEventListener {
 	};
 		
 	
+	/**
+	 * This class reads messges from the queue
+	 * and processes the commands send by our Activity
+	 */
     class ServiceHandler extends Handler {
         @Override
+        /** 
+         * Main method: processes a queued command message
+         */
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case MSG_COMMAND_REGISTERCLIENT:
@@ -329,11 +421,12 @@ public class DataloggerService extends Service implements SensorEventListener {
             }
         }
         
+        /**
+         * Service method for sending a status response to our Activity
+         */
         private void sendStatusResponse(boolean statusIsNew) {
         	DataloggerStatusParams params = new DataloggerStatusParams(mIsLogging, statusIsNew, mSensorRate, mLoggingType, mLogFilename);
         	Bundle bundle = new Bundle();
-//        	bundle.setClassLoader(getClassLoader());
-//        	bundle.putSerializable(BUNDLE_PARCELLABLE_PARAMS, params);
         	bundle.putParcelable(BUNDLEKEY_PARCELLABLE_PARAMS, params);
         	Message msg = Message.obtain(null, MSG_RESPONSE_STATUS);
         	msg.setData(bundle);
@@ -349,6 +442,9 @@ public class DataloggerService extends Service implements SensorEventListener {
             }
         }
         
+        /**
+         * Service method for sending sensor events to our Activity
+         */
         private void sendSensorEvent(SensorEvent event) {
         	Bundle bundle = new Bundle();
         	bundle.putLong(BUNDLEKEY_SENSOREVENT_TIMESTAMP, event.timestamp);
@@ -367,6 +463,9 @@ public class DataloggerService extends Service implements SensorEventListener {
             }
         }
         
+        /**
+         * Service method for sending statistics information to our Activity
+         */
         private void sendStatisticsEvent(int eventsCount, float totalRate, float latestRate) {
         	DataloggerStatisticsParams params = new DataloggerStatisticsParams(eventsCount, totalRate, latestRate);
         	Bundle bundle = new Bundle();
@@ -389,33 +488,20 @@ public class DataloggerService extends Service implements SensorEventListener {
 	
     /**
      * Target we publish for clients to send messages to IncomingHandler.
+     * 
+     * We don't set it here because we want to save the ServiceHandler to a data member
      */
-//    final Messenger mMessenger = new Messenger(new ServiceHandler());
-//    final Messenger mMessenger;
     Messenger mMessenger;
 
-    /**
-     * When binding to the service, we return an interface to our messenger
-     * for sending messages to the service.
-     */
-    @Override
-    public IBinder onBind(Intent intent) {
-		Log.d("AccelerometerLoggerService", "onBind()");
-        return mMessenger.getBinder();
-    }
+	/********************************************************************/
+	/* Service lifecycle methods */
 
-    /**
-     * When binding to the service, we return an interface to our messenger
-     * for sending messages to the service.
-     * @return 
-     */
-    @Override
-    public boolean onUnbind(Intent intent) {
-		Log.d("AccelerometerLoggerService", "onUnbind()");
-		return false;
-    }
-	
 	@Override
+	/**
+	 * Called when the service is created
+	 * 
+	 * We initialize the service handler, and the messenger
+	 */
 	public void onCreate() {
 		Log.d("AccelerometerLoggerService", "onCreate()");
 		
@@ -436,6 +522,9 @@ public class DataloggerService extends Service implements SensorEventListener {
 */		
 	}
 
+	/** Called when the service is started with an intent.
+	 *  Unused at the moment
+	 */
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		Log.d("AccelerometerLoggerService", "onStartCommand()");
@@ -445,17 +534,46 @@ public class DataloggerService extends Service implements SensorEventListener {
 		// If we get killed, after returning from here, restart
 		return START_STICKY;
 	}
-
+	
 	@Override
 	public void onDestroy() {
 		Log.d("AccelerometerLoggerService", "onDestroy()");
 	}
+    
+    /**
+     * When binding to the service, we return an interface to our messenger
+     * for sending messages to the service.
+     */
+    @Override
+    public IBinder onBind(Intent intent) {
+		Log.d("AccelerometerLoggerService", "onBind()");
+        return mMessenger.getBinder();
+    }
+
+    /**
+     * When binding to the service, we return an interface to our messenger
+     * for sending messages to the service.
+     */
+    @Override
+    public boolean onUnbind(Intent intent) {
+		Log.d("AccelerometerLoggerService", "onUnbind()");
+		return false;
+    }
 	
+	/********************************************************************/
+	/* Logging commands */
+	
+	/**
+	 * Called from the service handler to start logging activities
+	 */
     private boolean startLogging() {
 		Log.d("AccelerometerLoggerService", "startLogging()");
 				
 		if ((mLoggingType & LOGTYPE_FILE) > 0) {
-			// Logging to file as well
+			// Logging to file (maybe to screen too)
+			// need to ensure that the SD card is present, our directory exists,
+			// and create logging output files
+			
 		    String state = Environment.getExternalStorageState();
 		    if (!Environment.MEDIA_MOUNTED.equals(state)) {
 				Toast.makeText(this, getString(R.string.error_cannotcreatedir), Toast.LENGTH_SHORT).show();
@@ -470,13 +588,13 @@ public class DataloggerService extends Service implements SensorEventListener {
 		        	// Trouble creating directory
 					Toast.makeText(this, getString(R.string.error_cannotcreatedir), Toast.LENGTH_SHORT).show();
 			        return false;
-		        }
-		    }
+		        } // else: directory created successfully
+		    } // else: directory exists
 
-		    // Create a file
-		    SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd_HH-mm-ss", Locale.US);
+		    // Create our logging file
+		    SimpleDateFormat formatter = new SimpleDateFormat(FILENAME_DATEFORMAT_STRING, FILENAME_DATEFORMAT_LOCALE);
 		    Date now = new Date();
-		    mLogFilename = formatter.format(now) + ".txt";
+		    mLogFilename = formatter.format(now) + FILENAME_EXTENSION;
 		    mLogFile = new File(logDir.getAbsolutePath(), mLogFilename);
 	        try {
 	        	mLogOutputStream = new FileOutputStream(mLogFile);
@@ -517,6 +635,9 @@ public class DataloggerService extends Service implements SensorEventListener {
 		return true;
     }
 
+	/**
+	 * Called from the service handler to stop logging activities
+	 */
     private void stopLogging() {
     	if (mSensorManager != null) {
 			mSensorManager.unregisterListener(this);
@@ -527,12 +648,17 @@ public class DataloggerService extends Service implements SensorEventListener {
 		mLogOutputStream = null;
     }
 	
-	@Override
-	public void onAccuracyChanged(Sensor sensor, int accuracy) {
-		// TODO Auto-generated method stub
-		
-	}
+
+	/********************************************************************/
+	/* Sensor handling commands
+	 * 
+	 * Implement SensorEventListener
+	 * 
+	 * */
 	
+    /**
+     * Called with new sensor data
+     */
 	@Override
 	public void onSensorChanged(SensorEvent event) {
 //		Log.v("AccelerometerLoggerService", "onSensorChanged");
@@ -578,7 +704,24 @@ public class DataloggerService extends Service implements SensorEventListener {
             e.printStackTrace();
         }
 	}
+
+	/**
+	 * Called when sensor accurace changes
+	 */
+	@Override
+	public void onAccuracyChanged(Sensor sensor, int accuracy) {
+		// We don't care about sensor accuracy. Ignore.
+	}
+
 	
+	/********************************************************************/
+	/* Notification-handling methods
+	 * */
+
+	/**
+	 * Initialize notification to inform the user 
+	 * that the service is running and logging
+	 */ 
 	private void notificationStart() {
 		NotificationCompat.Builder mBuilder =
 			    new NotificationCompat.Builder(this)
@@ -612,6 +755,9 @@ public class DataloggerService extends Service implements SensorEventListener {
 		startForeground (0, notification);		
 	}
 	
+	/**
+	 * Removes a previousely-created notification
+	 */
 	private void notificationEnd() {
 		NotificationManager mNotifyMgr = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 		mNotifyMgr.cancel(NOTIFICATIONID_INPROGRESS);

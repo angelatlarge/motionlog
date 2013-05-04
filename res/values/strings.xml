@@ -2,6 +2,7 @@
 <resources>
 	<!-- Not translatable -->
 	<string name="prefkey_logwarn">prefkey_logwarn</string>
+	<string name="application_directory">com.atlarge.motionlog</string>
 	
 	<!-- Translatable -->
     <string name="app_name">Motionlog</string>
